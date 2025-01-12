@@ -1,0 +1,9 @@
+{
+  "name": "websocket-server",
+  "version": "1.0.0",
+  "description": "WebSocket server for MotoTracker",
+  "main": "websocket-server.js",
+  "dependencies": {
+    "ws": "^8.16.0"
+  }
+}

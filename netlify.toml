@@ -9,3 +9,13 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+[[redirects]]
+  from = "/ws/*"
+  to = "/.netlify/functions/websocket-server/:splat"
+  status = 200
+  force = true
+  conditions = { Role = ["admin", "user"] }
+
+[functions]
+  directory = "netlify/functions"

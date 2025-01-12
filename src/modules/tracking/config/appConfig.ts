@@ -5,8 +5,17 @@ export interface ConfigVars {
 }
 
 const getSocketUrl = (): string => {
-  const defaultUrl = "ws://localhost:3001";
-  return import.meta.env.VITE_SOCKET_URL || defaultUrl;
+  const isProd = import.meta.env.PROD;
+  const defaultDevUrl = "ws://localhost:3001";
+  const prodUrl = import.meta.env.VITE_SOCKET_URL;
+
+  if (isProd) {
+    // Em produção, usar wss:// e o domínio do Netlify
+    const domain = window.location.hostname;
+    return `wss://${domain}/ws`;
+  }
+
+  return prodUrl || defaultDevUrl;
 };
 
 const getGeocodeUrl = (): string => {
