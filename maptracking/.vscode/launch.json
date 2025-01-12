@@ -1,0 +1,21 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "type": "node",
+        "request": "launch",
+        "name": "Debug WebSocket Server",
+        "program": "${workspaceFolder}/src/websocket-server.js",
+        "stopOnEntry": false,
+        "args": [],
+        "cwd": "${workspaceFolder}",
+        "preLaunchTask": null,
+        "runtimeExecutable": "${workspaceFolder}/node",  // Specify the full path to your Node.js executable
+        "timeout": 5000,
+        "sourceMaps": true,
+        "restart": true,
+        "console": "integratedTerminal",
+        "internalConsoleOptions": "neverOpen"
+      }
+    ]
+  }  

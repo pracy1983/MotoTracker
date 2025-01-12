@@ -1,0 +1,135 @@
+https://www.youtube.com/watch?v=VH4gXcvkmOY
+https://github.com/ChristianLempa/cheat-sheets/blob/main/misc/ssl-certs.md
+
+------------------------ DO NOT SIGN SERVER CERRTIFICATE ------------------------
+
+Client certificate validations:
+- SubjectAlternative -> The domains and subdomains permitted. Can be use with wild card (*.example.com);
+- Valid From & Valid To
+- Certificate chain (explain later, but root CA emits the intermediate CA and the intemediate certificate emits the ssl certificate: Root CA -> Intermediate CA -> SSL Certificate)
+Steps to generate:
+:openssl genrsa -aes256 -out client-key.pem 4096
+:MSYS2_ARG_CONV_EXCL='/C' openssl req -new -sha256 -subj "/CN=maptracking" -key client-key.pem -out client-cert.csr
+:openssl x509 -req -sha256 -days 3650 -in client-cert.csr -CA ca.pem -CAkey ca-key.pem -out client-cert.pem -extfile extfile.cnf -CAcreateserial
+
+Server:
+- Trust in a root CA (self-signed)
+
+
+
+General notes:
+- Add all domains and subdomains on SubjectAlternative (127.0.0.1, 0.0.0.0, localhost, ngrok url, etc).
+- On git bash I had to fix the command of certificate request ("MSYS2_ARG_CONV_EXCL='/C' openssl req...")
+
+MSYS2_ARG_CONV_EXCL='/C' openssl req -new -sha256 -subj "/CN=Maptracking" -key client-key.pem -out client-cert.csr
+openssl x509 -req -sha256 -days 3650 -in client-cert.csr -CA ca.pem -CAkey ca-key.pem -out client-cert.pem -extfile extfile.cnf -CAcreateserial
+
+openssl s_client -connect localhost:3001 -cert client-cert.pem -key client-key.pem -CAfile ca.pem 
+
+openssl s_client -connect localhost:3001 \
+    -cert client-cert.pem \
+    -key client-key.pem -pass pass:DLalu5PXT7UHH0k \
+    -CAfile ca.pem \
+    -quiet
+
+Passwords:
+- ca-key.pem (CA key passphrase) = VgsKmEzbP3C8CGA
+- client-key.pem (client certificate key passphrase) = DLalu5PXT7UHH0k
+- client.pfx = DLalu5PXT7UHH0k
+- server.key.pem = Znmu47Mxnh7rX9g
+- server-store.bks = Znmu47Mxnh7rX9g
+
+-----------------------------------------------------------------
+
+
+
+
+- Generate CA Certificate:
+
+ca.cnf
+--------------------------------------------
+[req]
+distinguished_name = req_distinguished_name
+x509_extensions = v3_ca
+prompt = no
+
+[req_distinguished_name]
+C = BR
+ST = SP
+L = Sao Paulo
+O = FreeSoftware
+OU = MapTracking
+CN = rootCAFreeSoftware
+
+[v3_ca]
+basicConstraints = CA:TRUE
+--------------------------------------------
+
+openssl genrsa -aes256 -passout pass:VgsKmEzbP3C8CGA -out ca-key.pem 4096
+openssl req -new -key ca-key.pem -passin pass:VgsKmEzbP3C8CGA -out ca.csr -config ca.cnf
+openssl x509 -req -in ca.csr -signkey ca-key.pem -passin pass:VgsKmEzbP3C8CGA -out ca.pem -days 365 -extfile ca.cnf -extensions v3_ca
+
+
+--
+
+
+- Generate Server certificate:
+
+server.cnf
+--------------------------------------------
+[req]
+distinguished_name = req_distinguished_name
+prompt = no
+req_extensions = req_ext
+
+[req_distinguished_name]
+C = BR
+ST = SP
+L = Sao Paulo
+O = FreeSoftware
+OU = MapTracking
+CN = server
+
+[req_ext]
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = 0.tcp.sa.ngrok.io
+--------------------------------------------
+
+openssl genrsa -aes256 -passout pass:Znmu47Mxnh7rX9g -out server-key.pem 4096
+openssl req -new -key server-key.pem -passin pass:Znmu47Mxnh7rX9g -out server.csr -config server.cnf
+openssl x509 -req -in server.csr -signkey server-key.pem -passin pass:Znmu47Mxnh7rX9g -out server-cert.pem -days 365 -extfile server.cnf -extensions req_ext
+
+--
+
+
+- Generate Client Certificate:
+
+client.cnf
+--------------------------------------------
+[req]
+distinguished_name = req_distinguished_name
+prompt = no
+
+[req_distinguished_name]
+C = BR
+ST = SP
+L = Sao Paulo
+O = FreeSoftware
+OU = MapTracking
+CN = client
+
+[v3_req]
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = localhost
+IP.1 = 127.0.0.1
+--------------------------------------------
+
+openssl genrsa -aes256 -passout pass:DLalu5PXT7UHH0k -out client-key.pem 4096
+openssl req -new -key client-key.pem -passin pass:DLalu5PXT7UHH0k -out client.csr -config client.cnf
+openssl x509 -req -sha256 -days 365 -in client.csr -CA ca.pem -CAkey ca-key.pem -passin pass:VgsKmEzbP3C8CGA -out client-cert.pem -extfile client.cnf -CAcreateserial
+
+openssl pkcs12 -export -out client-cert.pfx -inkey client-key.pem -in client-cert.pem -passin pass:DLalu5PXT7UHH0k -passout pass:DLalu5PXT7UHH0k

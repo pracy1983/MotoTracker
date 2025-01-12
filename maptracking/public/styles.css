@@ -1,0 +1,51 @@
+.house-marker-container {
+    margin-top: -13px;
+    margin-bottom: 0px;
+    margin-right: 0px;
+    margin-left: -8px;
+}
+
+.house-marker {
+    color: white;
+    position: relative;
+}
+
+.house-marker::before {
+    background-color: black;
+    content: '';
+    box-sizing: border-box;
+    width: 39px;
+    height: 37px;
+    border-radius: 50%;
+    border: 1px solid #000000;
+    position: absolute;
+    top: -5px;
+    left: -6px;
+    z-index: -1;
+}
+
+.ghost-marker-container {
+    margin-top: -9px;
+    margin-bottom: 0px;
+    margin-right: 0px;
+    margin-left: -4px;
+}
+
+.ghost-marker {
+    color: white;
+    position: relative;
+}
+
+.ghost-marker::before {
+    background-color: black;
+    content: '';
+    box-sizing: border-box;
+    width: 36px;
+    height: 35px;
+    border-radius: 50%;
+    border: 1px solid #000000;
+    position: absolute;
+    top: -5px;
+    left: -9px;
+    z-index: -1;
+}

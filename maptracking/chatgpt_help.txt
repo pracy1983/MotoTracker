@@ -1,0 +1,50 @@
+Hello! I have a nextjs project structured like this:
+
+|-- node_modules
+|---- .bin
+|------ ngrok.cmd
+|-- nodejs
+|-- src
+|---- pages
+|------ _app.tsx
+|------ _map.tsx
+|------ _document.tsx
+|------ index.tsx
+|---- public
+|-- next-env.d.ts
+|-- next.bat
+|-- node.bat
+|-- npm.bat
+|-- npx.bat
+|-- package-lock.json
+|-- package.json
+|-- run.bat
+|-- tsc.bat
+|-- tsconfig.json
+
+A little context:
+- This is a custom structured project that I made in a way that nodejs binaries could be used inside cmd referencing the actual files, like the example below:
+
+# An example referencing the global installed packages:
+---npm.bat---
+@echo off
+SET NODEJS_PATH=nodejs
+%NODEJS_PATH%\npm.cmd %*
+-------------
+
+# An example referencing the local installed packages:
+---next.bat---
+@echo off
+SET NODEJS_PATH=node_modules\.bin
+%NODEJS_PATH%\next.cmd %*
+-------------
+
+- I can run the project with the run.bat script:
+---run.bat---
+@echo off
+concurrently "npm run dev" "node src/websocket-server.js"
+-------------
+
+And that opens a web server on the port 3000 and a websocker server on port 3001.
+
+How do I add ngrok to the run.bat? I want it to run tcp on port 3001
