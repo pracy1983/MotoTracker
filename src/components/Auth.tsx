@@ -6,9 +6,44 @@ import { Lock, Mail, User, Phone, Bike, Eye, EyeOff } from 'lucide-react';
 const DDI_LIST = [
   { code: '55', country: 'Brasil' },
   { code: '1', country: 'Estados Unidos/Canadá' },
+  { code: '44', country: 'Reino Unido' },
   { code: '351', country: 'Portugal' },
   { code: '34', country: 'Espanha' },
-  { code: '49', country: 'Alemanha' }
+  { code: '33', country: 'França' },
+  { code: '39', country: 'Itália' },
+  { code: '49', country: 'Alemanha' },
+  { code: '81', country: 'Japão' },
+  { code: '86', country: 'China' },
+  { code: '7', country: 'Rússia' },
+  { code: '61', country: 'Austrália' },
+  { code: '64', country: 'Nova Zelândia' },
+  { code: '52', country: 'México' },
+  { code: '54', country: 'Argentina' },
+  { code: '56', country: 'Chile' },
+  { code: '57', country: 'Colômbia' },
+  { code: '58', country: 'Venezuela' },
+  { code: '51', country: 'Peru' },
+  { code: '595', country: 'Paraguai' },
+  { code: '598', country: 'Uruguai' },
+  { code: '591', country: 'Bolívia' },
+  { code: '593', country: 'Equador' },
+  { code: '20', country: 'Egito' },
+  { code: '27', country: 'África do Sul' },
+  { code: '91', country: 'Índia' },
+  { code: '82', country: 'Coreia do Sul' },
+  { code: '84', country: 'Vietnã' },
+  { code: '66', country: 'Tailândia' },
+  { code: '65', country: 'Singapura' },
+  { code: '60', country: 'Malásia' },
+  { code: '62', country: 'Indonésia' },
+  { code: '31', country: 'Holanda' },
+  { code: '32', country: 'Bélgica' },
+  { code: '41', country: 'Suíça' },
+  { code: '43', country: 'Áustria' },
+  { code: '46', country: 'Suécia' },
+  { code: '47', country: 'Noruega' },
+  { code: '45', country: 'Dinamarca' },
+  { code: '358', country: 'Finlândia' }
 ];
 
 // Lista de DDDs do Brasil
@@ -32,7 +67,27 @@ const DDD_LIST = [
   // Centro-Oeste
   { ddd: '61', estado: 'DF' }, { ddd: '62', estado: 'GO' },
   { ddd: '64', estado: 'GO' }, { ddd: '65', estado: 'MT' },
-  { ddd: '66', estado: 'MT' }, { ddd: '67', estado: 'MS' }
+  { ddd: '66', estado: 'MT' }, { ddd: '67', estado: 'MS' },
+  // Sudeste
+  { ddd: '27', estado: 'ES' }, { ddd: '28', estado: 'ES' },
+  { ddd: '31', estado: 'MG' }, { ddd: '32', estado: 'MG' },
+  { ddd: '33', estado: 'MG' }, { ddd: '34', estado: 'MG' },
+  { ddd: '35', estado: 'MG' }, { ddd: '37', estado: 'MG' },
+  { ddd: '38', estado: 'MG' }, { ddd: '21', estado: 'RJ' },
+  { ddd: '22', estado: 'RJ' }, { ddd: '24', estado: 'RJ' },
+  { ddd: '11', estado: 'SP' }, { ddd: '12', estado: 'SP' },
+  { ddd: '13', estado: 'SP' }, { ddd: '14', estado: 'SP' },
+  { ddd: '15', estado: 'SP' }, { ddd: '16', estado: 'SP' },
+  { ddd: '17', estado: 'SP' }, { ddd: '18', estado: 'SP' },
+  { ddd: '19', estado: 'SP' },
+  // Sul
+  { ddd: '41', estado: 'PR' }, { ddd: '42', estado: 'PR' },
+  { ddd: '43', estado: 'PR' }, { ddd: '44', estado: 'PR' },
+  { ddd: '45', estado: 'PR' }, { ddd: '46', estado: 'PR' },
+  { ddd: '51', estado: 'RS' }, { ddd: '53', estado: 'RS' },
+  { ddd: '54', estado: 'RS' }, { ddd: '55', estado: 'RS' },
+  { ddd: '47', estado: 'SC' }, { ddd: '48', estado: 'SC' },
+  { ddd: '49', estado: 'SC' }
 ];
 
 export function Auth() {
@@ -207,9 +262,10 @@ export function Auth() {
                 <div className="grid grid-cols-12 gap-2">
                   <div className="col-span-3">
                     <select
+                      className="w-24 p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                       value={ddi}
                       onChange={(e) => setDdi(e.target.value)}
-                      className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                      required={isSignUp}
                     >
                       {DDI_LIST.map(({ code, country }) => (
                         <option key={code} value={code}>
@@ -218,21 +274,34 @@ export function Auth() {
                       ))}
                     </select>
                   </div>
-                  <div className="col-span-3">
-                    <select
-                      value={ddd}
-                      onChange={(e) => setDdd(e.target.value)}
-                      className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                      required={isSignUp}
-                    >
-                      <option value="">DDD</option>
-                      {DDD_LIST.map(({ ddd, estado }) => (
-                        <option key={ddd} value={ddd}>
-                          ({ddd}) {estado}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  {ddi === '55' ? (
+                    <div className="col-span-3">
+                      <select
+                        className="w-24 p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                        value={ddd}
+                        onChange={(e) => setDdd(e.target.value)}
+                        required={isSignUp}
+                      >
+                        <option value="">DDD</option>
+                        {DDD_LIST.map(({ ddd, estado }) => (
+                          <option key={ddd} value={ddd}>
+                            {estado} ({ddd})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : (
+                    <div className="col-span-3">
+                      <input
+                        type="text"
+                        className="w-24 p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                        value={ddd}
+                        onChange={(e) => setDdd(e.target.value.replace(/\D/g, '').slice(0, 3))}
+                        placeholder="Área"
+                        required={isSignUp}
+                      />
+                    </div>
+                  )}
                   <div className="col-span-6">
                     <div className="relative">
                       <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />

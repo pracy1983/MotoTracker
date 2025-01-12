@@ -15,11 +15,55 @@ export function CadastroMoto({ onClose }: CadastroMotoProps) {
     modelo: '',
     cilindradas: '',
     ano: new Date().getFullYear(),
-    quilometragem_atual: ''
+    quilometragem_atual: '',
+    placa: '',
+    cor: ''
   });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const marcasComuns = [
+    'Honda',
+    'Yamaha',
+    'Kawasaki',
+    'Suzuki',
+    'BMW',
+    'Harley-Davidson',
+    'Ducati',
+    'KTM',
+    'Triumph',
+    'Royal Enfield'
+  ];
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!formData.marca) newErrors.marca = 'Marca é obrigatória';
+    if (!formData.modelo) newErrors.modelo = 'Modelo é obrigatório';
+    if (!formData.cilindradas) newErrors.cilindradas = 'Cilindradas é obrigatório';
+    if (!formData.placa) {
+      newErrors.placa = 'Placa é obrigatória';
+    } else if (!/^[A-Z]{3}[0-9][0-9A-Z][0-9]{2}$/.test(formData.placa)) {
+      newErrors.placa = 'Placa inválida. Use o formato ABC1234 ou ABC1D23';
+    }
+    if (formData.ano < 1900 || formData.ano > new Date().getFullYear() + 1) {
+      newErrors.ano = 'Ano inválido';
+    }
+    if (parseInt(formData.quilometragem_atual) < 0) {
+      newErrors.quilometragem_atual = 'Quilometragem não pode ser negativa';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -105,15 +149,23 @@ export function CadastroMoto({ onClose }: CadastroMotoProps) {
                   </label>
                   <div className="relative">
                     <Bike className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                    <input
-                      type="text"
+                    <select
                       name="marca"
                       value={formData.marca}
                       onChange={handleChange}
                       className="pl-10 w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                       required
-                    />
+                    >
+                      <option value="">Selecione uma marca</option>
+                      {marcasComuns.map(marca => (
+                        <option key={marca} value={marca}>{marca}</option>
+                      ))}
+                      <option value="Outra">Outra</option>
+                    </select>
                   </div>
+                  {errors.marca && (
+                    <p className="text-red-400 text-sm mt-1">{errors.marca}</p>
+                  )}
                 </div>
 
                 <div>
@@ -127,6 +179,43 @@ export function CadastroMoto({ onClose }: CadastroMotoProps) {
                     onChange={handleChange}
                     className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                     required
+                  />
+                  {errors.modelo && (
+                    <p className="text-red-400 text-sm mt-1">{errors.modelo}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Placa
+                  </label>
+                  <input
+                    type="text"
+                    name="placa"
+                    value={formData.placa.toUpperCase()}
+                    onChange={handleChange}
+                    className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                    required
+                    placeholder="ABC1234"
+                    maxLength={7}
+                  />
+                  {errors.placa && (
+                    <p className="text-red-400 text-sm mt-1">{errors.placa}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Cor
+                  </label>
+                  <input
+                    type="text"
+                    name="cor"
+                    value={formData.cor}
+                    onChange={handleChange}
+                    className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+                    required
+                    placeholder="Ex: Vermelho"
                   />
                 </div>
 
@@ -149,6 +238,9 @@ export function CadastroMoto({ onClose }: CadastroMotoProps) {
                       cc
                     </span>
                   </div>
+                  {errors.cilindradas && (
+                    <p className="text-red-400 text-sm mt-1">{errors.cilindradas}</p>
+                  )}
                 </div>
 
                 <div>
@@ -168,6 +260,9 @@ export function CadastroMoto({ onClose }: CadastroMotoProps) {
                       required
                     />
                   </div>
+                  {errors.ano && (
+                    <p className="text-red-400 text-sm mt-1">{errors.ano}</p>
+                  )}
                 </div>
 
                 <div>
@@ -186,6 +281,9 @@ export function CadastroMoto({ onClose }: CadastroMotoProps) {
                       required
                     />
                   </div>
+                  {errors.quilometragem_atual && (
+                    <p className="text-red-400 text-sm mt-1">{errors.quilometragem_atual}</p>
+                  )}
                 </div>
 
                 <button
