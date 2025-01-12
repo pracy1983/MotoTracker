@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Node.js
+maptracking/nodejs/
+maptracking/.next/
