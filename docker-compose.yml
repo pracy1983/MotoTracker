@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+        - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+    networks:
+      - proxy-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mototracker.rule=Host(`${DOMAIN_NAME}`)"
+      - "traefik.http.routers.mototracker.entrypoints=websecure"
+      - "traefik.http.routers.mototracker.tls.certresolver=myresolver"
+      - "traefik.http.services.mototracker.loadbalancer.server.port=80"
+
+  websocket:
+    build:
+      context: .
+      dockerfile: Dockerfile.ws
+    networks:
+      - proxy-net
+    environment:
+      - WS_PORT=3001
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.motowebsocket.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/ws`)"
+      - "traefik.http.routers.motowebsocket.entrypoints=websecure"
+      - "traefik.http.routers.motowebsocket.tls.certresolver=myresolver"
+      - "traefik.http.services.motowebsocket.loadbalancer.server.port=3001"
+      - "traefik.http.middlewares.ws-stripprefix.stripprefix.prefixes=/ws"
+      - "traefik.http.routers.motowebsocket.middlewares=ws-stripprefix"
+
+networks:
+  proxy-net:
+    external: true
