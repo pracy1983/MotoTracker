@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Wrench, MapPin, Clock, AlertTriangle, Plus, Bike } from 'lucide-react';
+import { Wrench, MapPin, Clock, AlertTriangle, Plus, Bike, Navigation } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { NovaManutencao } from './NovaManutencao';
 import { MapaRota } from './MapaRota';
@@ -28,6 +28,7 @@ export function Dashboard() {
   const [manutencoes, setManutencoes] = useState<Manutencao[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isTripActive, setIsTripActive] = useState(false);
 
   const carregarDados = async () => {
     try {
@@ -82,9 +83,25 @@ export function Dashboard() {
     carregarDados();
   }, []);
 
+  // Sync state if odometer updates from another component
+  useEffect(() => {
+    const handleOdometerUpdate = (event: any) => {
+      if (selectedMoto && event.detail.motoId === selectedMoto.id) {
+        setSelectedMoto(prev => prev ? ({
+          ...prev,
+          quilometragem_atual: event.detail.quilometragem
+        }) : null);
+        setIsTripActive(true); // If odometer is updating live, a trip is active
+      }
+    };
+    window.addEventListener('odometerUpdate', handleOdometerUpdate);
+    return () => window.removeEventListener('odometerUpdate', handleOdometerUpdate);
+  }, [selectedMoto]);
+
   const handleMotoSelect = (moto: Motocicleta) => {
     setSelectedMoto(moto);
     loadManutencoes(moto.id);
+    setIsTripActive(false);
   };
 
   if (loading) {
@@ -116,7 +133,7 @@ export function Dashboard() {
   }
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto pb-12">
+    <div className="space-y-8 max-w-4xl mx-auto pb-24">
       {/* Moto Selector */}
       {motos.length > 1 && (
         <div className="flex gap-3 overflow-x-auto pb-4 no-scrollbar">
@@ -138,7 +155,13 @@ export function Dashboard() {
 
       {/* Main Odometer Display */}
       <div className="flex flex-col items-center justify-center py-6 relative">
-         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-orange-500/10 blur-[100px] rounded-full -z-10"></div>
+          {isTripActive && (
+            <div className="absolute top-0 right-10 flex items-center gap-2 bg-orange-500/20 px-3 py-1 rounded-full border border-orange-500/20 animate-pulse">
+               <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+               <span className="text-[10px] font-black text-orange-500 uppercase tracking-widest">Live Trip</span>
+            </div>
+          )}
+         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-80 h-80 bg-orange-500/5 blur-[100px] rounded-full -z-10"></div>
          <Odometer 
           quilometragem={selectedMoto.quilometragem_atual} 
           motoId={selectedMoto.id}
@@ -148,109 +171,100 @@ export function Dashboard() {
 
       {/* Quick Actions Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <button className="btn-sos col-span-2 md:col-span-1">
-          <span className="text-2xl font-black mb-1">SOS</span>
+        <button className="btn-sos col-span-2 md:col-span-1 border border-red-500/20 group hover:border-red-500 transition-all">
+          <span className="text-2xl font-black mb-1 font-orbitron group-hover:scale-110 transition-transform">SOS</span>
           <span className="text-[10px] font-bold uppercase tracking-widest opacity-80">Emergência</span>
         </button>
         
         <button 
           onClick={() => setShowModal(true)}
-          className="glass-card p-6 flex flex-col items-center justify-center gap-3 border-orange-500/20"
+          className="glass-card p-6 flex flex-col items-center justify-center gap-3 group hover:border-orange-500/40 transition-all"
         >
-          <Wrench className="h-8 w-8 text-orange-500" />
+          <Wrench className="h-8 w-8 text-orange-500 group-hover:rotate-45 transition-transform" />
           <span className="text-[10px] font-bold uppercase tracking-widest text-white text-center font-orbitron">Manutenção</span>
         </button>
 
-        <button className="glass-card p-6 flex flex-col items-center justify-center gap-3">
-          <MapPin className="h-8 w-8 text-orange-500" />
-          <span className="text-[10px] font-bold uppercase tracking-widest text-white text-center font-orbitron">Ver Percurso</span>
+        <button 
+          onClick={() => document.getElementById('map-section')?.scrollIntoView({ behavior: 'smooth' })}
+          className="glass-card p-6 flex flex-col items-center justify-center gap-3 group hover:border-orange-500/40 transition-all"
+        >
+          <Navigation className="h-8 w-8 text-orange-500 group-hover:translate-y-[-4px] transition-transform" />
+          <span className="text-[10px] font-bold uppercase tracking-widest text-white text-center font-orbitron">Trip Live</span>
         </button>
 
-        <button className="glass-card p-6 flex flex-col items-center justify-center gap-3">
-          <Bike className="h-8 w-8 text-orange-500" />
+        <button className="glass-card p-6 flex flex-col items-center justify-center gap-3 group hover:border-orange-500/40 transition-all">
+          <Activity className="h-8 w-8 text-orange-500 group-hover:scale-110 transition-transform" />
           <span className="text-[10px] font-bold uppercase tracking-widest text-white text-center font-orbitron">Relatório</span>
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Recent Maintenance */}
-        <div className="glass-card p-6">
+        <div className="glass-card p-6 border-white/5">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-orange-500/10 rounded-lg flex items-center justify-center">
                 <AlertTriangle className="h-4 w-4 text-orange-500" />
               </div>
-              <h3 className="font-bold text-sm uppercase tracking-widest text-white">Últimas Atividades</h3>
+              <h3 className="font-bold text-sm uppercase tracking-widest text-white font-orbitron tracking-tight">Histórico</h3>
             </div>
-            <button className="text-[10px] font-bold text-orange-500 uppercase tracking-tighter hover:underline">Ver todas</button>
+            <button className="text-[10px] font-black text-orange-500 uppercase tracking-widest hover:underline">Ver tudo</button>
           </div>
           
           {manutencoes.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {manutencoes.map(manutencao => (
-                <div key={manutencao.id} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
+                <div key={manutencao.id} className="flex items-center justify-between p-4 rounded-2xl bg-white/2 border border-white/5 hover:bg-white/5 transition-colors group">
                   <div>
-                    <p className="text-sm font-bold text-white mb-1">{manutencao.tipo}</p>
-                    <p className="text-[10px] text-gray-500 font-medium uppercase">{new Date(manutencao.data).toLocaleDateString()} • {manutencao.quilometragem.toLocaleString()} KM</p>
+                    <p className="text-sm font-bold text-white mb-1 uppercase tracking-tight font-orbitron">{manutencao.tipo}</p>
+                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{new Date(manutencao.data).toLocaleDateString()} • {manutencao.quilometragem.toLocaleString()} KM</p>
                   </div>
-                  <div className="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center">
-                    <Plus className="h-3 w-3 text-gray-500" />
+                  <div className="w-8 h-8 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center group-hover:bg-orange-500 group-hover:text-black transition-all">
+                    <CheckCircle className="h-4 w-4" />
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="py-8 text-center bg-white/5 rounded-2xl border border-dashed border-white/10">
-               <p className="text-xs text-gray-500 font-medium font-orbitron">Nenhuma manutenção registrada.</p>
+            <div className="py-12 text-center bg-white/2 rounded-3xl border border-dashed border-white/10">
+               <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest">Nenhum registro encontrado</p>
             </div>
           )}
         </div>
 
         {/* Reminders / Next Revisions */}
-        <div className="glass-card p-6">
+        <div className="glass-card p-6 border-white/5">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
                <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center">
                 <Clock className="h-4 w-4 text-blue-500" />
               </div>
-              <h3 className="font-bold text-sm uppercase tracking-widest text-white">Próximos Alertas</h3>
+              <h3 className="font-bold text-sm uppercase tracking-widest text-white font-orbitron tracking-tight">Alertas</h3>
             </div>
           </div>
           
           <div className="space-y-4">
             {selectedMoto.ultima_troca_oleo ? (
-              <div className="flex items-center gap-4 p-4 rounded-xl bg-gradient-to-r from-orange-500/10 to-transparent border-l-4 border-orange-500">
-                <div className="p-2 bg-orange-500/20 rounded-lg">
-                   <Clock className="h-5 w-5 text-orange-500" />
+              <div className="flex items-center gap-4 p-4 rounded-3xl bg-gradient-to-r from-orange-500/10 to-transparent border-l-4 border-orange-500">
+                <div className="w-12 h-12 bg-orange-500/20 rounded-2xl flex items-center justify-center text-orange-500">
+                   <Clock className="h-6 w-6" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-white mb-1">Troca de Óleo</p>
-                  <p className="text-[10px] text-gray-500 font-medium uppercase">Última em {new Date(selectedMoto.ultima_troca_oleo).toLocaleDateString()}</p>
+                  <p className="text-sm font-bold text-white mb-0.5 uppercase font-orbitron">Troca de Óleo</p>
+                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Última: {new Date(selectedMoto.ultima_troca_oleo).toLocaleDateString()}</p>
                 </div>
               </div>
             ) : (
-                <div className="p-4 rounded-xl bg-white/5 border border-white/5 text-center">
-                   <p className="text-xs text-gray-500 font-medium">Configure seus alertas de revisão.</p>
+                <div className="p-10 rounded-3xl bg-white/2 border border-white/5 text-center">
+                   <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest">Sem alertas ativos</p>
                 </div>
-            )}
-
-            {selectedMoto.ultima_revisao_freios && (
-              <div className="flex items-center gap-4 p-4 rounded-xl bg-white/5 border border-white/5 opacity-60">
-                <div className="p-2 bg-blue-500/20 rounded-lg">
-                   <Wrench className="h-5 w-5 text-blue-500" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-white mb-1">Revisão de Freios</p>
-                  <p className="text-[10px] text-gray-500 font-medium uppercase">Última em {new Date(selectedMoto.ultima_revisao_freios).toLocaleDateString()}</p>
-                </div>
-              </div>
             )}
           </div>
         </div>
       </div>
 
-      <div className="glass-card p-4 overflow-hidden h-[300px] md:h-[400px]">
-        <MapaRota motoId={selectedMoto.id} />
+      <div id="map-section" className="glass-card p-2 overflow-hidden border-white/5 shadow-inner">
+        <MapaRota motoId={selectedMoto.id} standalone={true} />
       </div>
 
       {showModal && (
@@ -262,5 +276,25 @@ export function Dashboard() {
         />
       )}
     </div>
+  );
+}
+
+function CheckCircle(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+      <polyline points="22 4 12 14.01 9 11.01" />
+    </svg>
   );
 }

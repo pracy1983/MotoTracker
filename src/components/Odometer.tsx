@@ -10,19 +10,33 @@ interface OdometerProps {
 
 export function Odometer({ quilometragem, motoId, onUpdate }: OdometerProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [currentKm, setCurrentKm] = useState(quilometragem);
   const [newKm, setNewKm] = useState(quilometragem.toString());
   const [loading, setLoading] = useState(false);
   
+  // Update local mileage when prop changes
+  useEffect(() => {
+    setCurrentKm(quilometragem);
+    setNewKm(quilometragem.toString());
+  }, [quilometragem]);
+
+  // Listen for real-time updates from TrackingMap
+  useEffect(() => {
+    const handleLiveSync = (event: any) => {
+      if (event.detail.motoId === motoId) {
+        setCurrentKm(event.detail.quilometragem);
+      }
+    };
+
+    window.addEventListener('odometerUpdate', handleLiveSync);
+    return () => window.removeEventListener('odometerUpdate', handleLiveSync);
+  }, [motoId]);
+
   // For the circular animation
   const radius = 90;
   const circumference = 2 * Math.PI * radius;
-  // Let's assume max km for the gauge visual is 100,000 for scale, but it's just decorative
-  const progress = Math.min((quilometragem % 100000) / 100000, 1) || 0;
+  const progress = Math.min((currentKm % 1000) / 1000, 1) || 0; // Show progress within the current thousand
   const offset = circumference - progress * circumference;
-
-  useEffect(() => {
-    setNewKm(quilometragem.toString());
-  }, [quilometragem]);
 
   const handleSave = async () => {
     setLoading(true);
@@ -34,9 +48,7 @@ export function Odometer({ quilometragem, motoId, onUpdate }: OdometerProps) {
 
       if (error) throw error;
       
-      if (onUpdate) {
-        onUpdate();
-      }
+      if (onUpdate) onUpdate();
       setIsEditing(false);
     } catch (error) {
       console.error('Erro ao atualizar quilometragem:', error);
@@ -47,14 +59,10 @@ export function Odometer({ quilometragem, motoId, onUpdate }: OdometerProps) {
 
   return (
     <div className="relative flex flex-col items-center">
-      {/* Outer Glow Ring */}
       <div className="absolute inset-0 bg-orange-500/10 rounded-full blur-3xl -z-10 scale-150"></div>
 
-      {/* Main Gauge Container */}
       <div className="relative w-64 h-64 flex items-center justify-center">
-        {/* SVG Gauge */}
         <svg className="w-full h-full transform -rotate-90">
-          {/* Background Track */}
           <circle
             cx="128"
             cy="128"
@@ -64,7 +72,6 @@ export function Odometer({ quilometragem, motoId, onUpdate }: OdometerProps) {
             fill="transparent"
             className="text-white/5"
           />
-          {/* Progress Path */}
           <circle
             cx="128"
             cy="128"
@@ -75,9 +82,8 @@ export function Odometer({ quilometragem, motoId, onUpdate }: OdometerProps) {
             strokeDashoffset={offset}
             strokeLinecap="round"
             fill="transparent"
-            className="transition-all duration-1000 ease-out"
+            className="transition-all duration-700 ease-out"
           />
-          {/* Gradients */}
           <defs>
             <linearGradient id="orangeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stopColor="#f97316" />
@@ -86,10 +92,9 @@ export function Odometer({ quilometragem, motoId, onUpdate }: OdometerProps) {
           </defs>
         </svg>
 
-        {/* Inner Content */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
           {isEditing ? (
-            <div className="flex flex-col items-center gap-2">
+            <div className="flex flex-col items-center gap-2 p-4 bg-black/90 rounded-3xl border border-white/10 shadow-2xl animate-scale-up">
               <input
                 type="number"
                 value={newKm}
@@ -97,40 +102,48 @@ export function Odometer({ quilometragem, motoId, onUpdate }: OdometerProps) {
                 className="w-32 bg-transparent border-b-2 border-orange-500 text-3xl font-orbitron font-bold text-center text-white focus:outline-none"
                 autoFocus
               />
-              <div className="flex gap-2">
-                <button onClick={handleSave} className="p-1 text-green-500 hover:scale-110 transition-transform"><Save className="h-5 w-5"/></button>
-                <button onClick={() => setIsEditing(false)} className="p-1 text-red-500 hover:scale-110 transition-transform"><X className="h-5 w-5"/></button>
+              <div className="flex gap-4 mt-2">
+                <button onClick={handleSave} disabled={loading} className="p-2 rounded-full bg-orange-500 text-black hover:scale-110 transition-transform">
+                   <Save className="h-5 w-5"/>
+                </button>
+                <button onClick={() => setIsEditing(false)} className="p-2 rounded-full bg-white/10 text-white hover:scale-110 transition-transform">
+                   <X className="h-5 w-5"/>
+                </button>
               </div>
             </div>
           ) : (
-            <>
-              <Gauge className="h-5 w-5 text-orange-500/50 mb-1" />
-              <span className="text-4xl font-black font-orbitron tracking-tighter text-white">
-                {quilometragem.toLocaleString()}
+            <div className="flex flex-col items-center group">
+              <div className="relative">
+                 <Gauge className="h-6 w-6 text-orange-500 mb-2 opacity-50 group-hover:opacity-100 transition-opacity" />
+                 {loading && <div className="absolute inset-0 animate-ping bg-orange-500 rounded-full opacity-20"></div>}
+              </div>
+              <span className="text-5xl font-black font-orbitron tracking-tighter text-white tabular-nums">
+                {currentKm.toLocaleString()}
               </span>
-              <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-orange-500 mt-1">
+              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-500 mt-2">
                 KILOMETERS
               </span>
               <button 
                 onClick={() => setIsEditing(true)}
-                className="mt-4 p-2 rounded-full hover:bg-white/5 text-gray-500 hover:text-white transition-all"
+                className="mt-6 p-3 rounded-2xl bg-white/5 border border-white/5 opacity-0 group-hover:opacity-100 transition-all hover:bg-orange-500 hover:text-black hover:scale-110"
+                title="Ajustar Odômetro"
               >
                 <Edit2 className="h-4 w-4" />
               </button>
-            </>
+            </div>
           )}
         </div>
       </div>
       
-      {/* Decorative Dots/Scale */}
       <div className="absolute w-full h-full pointer-events-none">
-         {[...Array(12)].map((_, i) => (
+         {[...Array(24)].map((_, i) => (
            <div 
              key={i} 
-             className="absolute w-1 h-1 bg-white/20 rounded-full"
+             className={`absolute w-0.5 h-2 rounded-full transition-opacity duration-1000 ${i % 2 === 0 ? 'bg-orange-500/40' : 'bg-white/10'}`}
              style={{
-               left: `calc(50% + ${Math.cos((i * 30) * Math.PI / 180) * (radius + 15)}px - 2px)`,
-               top: `calc(50% + ${Math.sin((i * 30) * Math.PI / 180) * (radius + 15)}px - 2px)`,
+               left: `calc(50% + ${Math.cos((i * 15) * Math.PI / 180) * (radius + 15)}px - 1px)`,
+               top: `calc(50% + ${Math.sin((i * 15) * Math.PI / 180) * (radius + 15)}px - 1px)`,
+               transform: `rotate(${i * 15 + 90}deg)`
              }}
            ></div>
          ))}

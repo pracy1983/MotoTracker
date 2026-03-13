@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { MapContainer, TileLayer, Polyline, Marker, useMap } from 'react-leaflet';
 import { Icon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -6,9 +6,10 @@ import { supabase } from '../../../lib/supabase';
 import { calculateBounds, calculateOptimalZoom, calculateSpeed, calculateDistance } from '../utils/geolib';
 import type { Location } from '../types';
 import { useWebSocket } from '../hooks/useWebSocket';
+import { Play, Square, Navigation, Activity, Gauge } from 'lucide-react';
 
 const MOTO_ICON = new Icon({
-  iconUrl: '/moto-icon.png', // Adicione este ícone aos assets
+  iconUrl: '/moto-icon.png',
   iconSize: [32, 32],
   iconAnchor: [16, 16],
 });
@@ -21,21 +22,14 @@ interface TrackingMapProps {
 
 function MapController({ locations }: { locations: Location[] }) {
   const map = useMap();
-
   useEffect(() => {
     if (locations.length > 0) {
       const bounds = calculateBounds(locations);
       if (bounds) {
-        const zoom = calculateOptimalZoom(bounds, {
-          width: map.getSize().x,
-          height: map.getSize().y
-        });
-        map.fitBounds([bounds.southWest, bounds.northEast]);
-        map.setZoom(zoom);
+        map.fitBounds([bounds.southWest, bounds.northEast], { padding: [50, 50] });
       }
     }
   }, [locations, map]);
-
   return null;
 }
 
@@ -45,7 +39,42 @@ export function TrackingMap({ motoId, standalone = false, onLocationUpdate }: Tr
   const [watchId, setWatchId] = useState<number | null>(null);
   const [currentSpeed, setCurrentSpeed] = useState(0);
   const [totalDistance, setTotalDistance] = useState(0);
-  const { isConnected, error: wsError, sendMessage } = useWebSocket(motoId);
+  const [sessionDistance, setSessionDistance] = useState(0);
+  
+  // Ref for accumulating distance to sync with DB
+  const pendingDistanceRef = useRef(0);
+  const lastSyncTimeRef = useRef(Date.now());
+  const { isConnected, sendMessage } = useWebSocket(motoId);
+
+  const syncOdometer = useCallback(async (distanceDelta: number) => {
+    if (!motoId || distanceDelta <= 0) return;
+
+    try {
+      // Get current mileage first to avoid race conditions (simple approach)
+      // For more robust sync, an RPC element like SET quilometragem_atual = quilometragem_atual + delta would be better
+      // But we'll do a point update for now.
+      const { data: moto } = await supabase
+        .from('motocicletas')
+        .select('quilometragem_atual')
+        .eq('id', motoId)
+        .single();
+      
+      if (moto) {
+        const newKm = moto.quilometragem_atual + distanceDelta;
+        await supabase
+          .from('motocicletas')
+          .update({ quilometragem_atual: newKm })
+          .eq('id', motoId);
+        
+        // Broadcast update locally for other components
+        window.dispatchEvent(new CustomEvent('odometerUpdate', { 
+          detail: { motoId, quilometragem: newKm } 
+        }));
+      }
+    } catch (err) {
+      console.error('Error syncing odometer:', err);
+    }
+  }, [motoId]);
 
   const updateLocation = useCallback(async (position: GeolocationPosition) => {
     const newLocation: Location = {
@@ -57,13 +86,8 @@ export function TrackingMap({ motoId, standalone = false, onLocationUpdate }: Tr
       accuracy: position.coords.accuracy
     };
 
-    // Enviar localização via WebSocket
     if (isConnected) {
-      sendMessage({
-        type: 'location',
-        motoId,
-        data: newLocation
-      });
+      sendMessage({ type: 'location', motoId, data: newLocation });
     }
 
     setLocations(prev => {
@@ -72,13 +96,26 @@ export function TrackingMap({ motoId, standalone = false, onLocationUpdate }: Tr
         const lastLoc = prev[prev.length - 1];
         const speed = calculateSpeed(lastLoc, newLocation);
         const distance = calculateDistance(lastLoc, newLocation);
-        setCurrentSpeed(speed);
+        
+        setCurrentSpeed(speed > 1 ? speed : 0); // Filter noise
         setTotalDistance(d => d + distance);
+        setSessionDistance(d => d + distance);
+        
+        // Add to pending sync
+        pendingDistanceRef.current += distance;
+        
+        // Sync with DB if pending > 50 meters or > 30 seconds
+        const now = Date.now();
+        if (pendingDistanceRef.current >= 0.05 || (now - lastSyncTimeRef.current > 30000 && pendingDistanceRef.current > 0)) {
+           syncOdometer(pendingDistanceRef.current);
+           pendingDistanceRef.current = 0;
+           lastSyncTimeRef.current = now;
+        }
       }
       return newLocations;
     });
 
-    if (motoId) {
+    if (motoId && tracking) {
       await supabase.from('rotas').insert([{
         motocicleta_id: motoId,
         latitude: newLocation.latitude,
@@ -91,39 +128,22 @@ export function TrackingMap({ motoId, standalone = false, onLocationUpdate }: Tr
     }
 
     onLocationUpdate?.(newLocation);
-  }, [motoId, onLocationUpdate, isConnected, sendMessage]);
+  }, [motoId, onLocationUpdate, isConnected, sendMessage, tracking, syncOdometer]);
 
   const startTracking = useCallback(() => {
     if (!navigator.geolocation) {
-      alert('Geolocalização não é suportada pelo seu navegador');
+      alert('Geolocalização não suportada');
       return;
     }
 
-    const options = {
-      enableHighAccuracy: true,
-      timeout: 5000,
-      maximumAge: 0
-    };
-
-    navigator.geolocation.getCurrentPosition(
-      () => {
-        const id = navigator.geolocation.watchPosition(
-          updateLocation,
-          (error) => {
-            console.error('Erro ao rastrear localização:', error);
-            alert('Erro ao rastrear localização. Por favor, verifique as permissões.');
-          },
-          options
-        );
-
-        setWatchId(id);
-        setTracking(true);
-      },
-      () => {
-        alert('Por favor, permita o acesso à sua localização para rastrear a rota.');
-      },
+    const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
+    const id = navigator.geolocation.watchPosition(updateLocation, 
+      (err) => console.error(err), 
       options
     );
+    setWatchId(id);
+    setTracking(true);
+    setSessionDistance(0);
   }, [updateLocation]);
 
   const stopTracking = useCallback(() => {
@@ -131,8 +151,13 @@ export function TrackingMap({ motoId, standalone = false, onLocationUpdate }: Tr
       navigator.geolocation.clearWatch(watchId);
       setWatchId(null);
       setTracking(false);
+      // Final sync if any pending
+      if (pendingDistanceRef.current > 0) {
+        syncOdometer(pendingDistanceRef.current);
+        pendingDistanceRef.current = 0;
+      }
     }
-  }, [watchId]);
+  }, [watchId, syncOdometer]);
 
   useEffect(() => {
     if (motoId) {
@@ -143,7 +168,7 @@ export function TrackingMap({ motoId, standalone = false, onLocationUpdate }: Tr
           .eq('motocicleta_id', motoId)
           .order('timestamp', { ascending: true });
 
-        if (data) {
+        if (data && data.length > 0) {
           const routes = data.map(rota => ({
             latitude: rota.latitude,
             longitude: rota.longitude,
@@ -153,8 +178,6 @@ export function TrackingMap({ motoId, standalone = false, onLocationUpdate }: Tr
             accuracy: rota.accuracy
           }));
           setLocations(routes);
-          
-          // Calcula distância total
           let total = 0;
           for (let i = 1; i < routes.length; i++) {
             total += calculateDistance(routes[i-1], routes[i]);
@@ -162,52 +185,78 @@ export function TrackingMap({ motoId, standalone = false, onLocationUpdate }: Tr
           setTotalDistance(total);
         }
       };
-
       loadRoutes();
     }
   }, [motoId]);
 
   return (
-    <div className="space-y-4">
-      <div className="bg-gray-800 rounded-lg shadow-lg p-4 border border-gray-700">
-        <div className="flex justify-between items-center mb-4">
-          <div>
-            <h3 className="text-lg font-semibold text-white">Rastreamento em Tempo Real</h3>
-            <div className="text-sm text-gray-400 space-y-1">
-              <p>Distância total: {totalDistance.toFixed(2)} km</p>
-              {tracking && <p>Velocidade atual: {currentSpeed.toFixed(1)} km/h</p>}
+    <div className="flex flex-col gap-4">
+      <div className="glass-card p-6 border-white/5 shadow-2xl overflow-hidden relative">
+        {/* Progress Background */}
+        <div className="absolute top-0 left-0 h-1 bg-orange-500 transition-all duration-500" style={{ width: tracking ? '100%' : '0%', opacity: tracking ? 1 : 0 }}></div>
+
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${tracking ? 'bg-orange-500 animate-pulse' : 'bg-white/5'}`}>
+              <Navigation className={`h-6 w-6 ${tracking ? 'text-black' : 'text-orange-500'}`} />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-white font-orbitron tracking-tight uppercase">Rastreador Live</h3>
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{tracking ? 'Monitorando Percurso' : 'Pronto para Rodar'}</p>
             </div>
           </div>
+          
           <button
             onClick={tracking ? stopTracking : startTracking}
-            className={`px-4 py-2 rounded-md transition-all duration-300 ${
+            className={`flex items-center gap-3 px-6 py-3 rounded-xl font-bold uppercase tracking-widest text-xs transition-all ${
               tracking 
-                ? 'bg-red-600 hover:bg-red-700 text-white' 
-                : 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-gray-900 hover:from-yellow-400 hover:to-yellow-500'
+                ? 'bg-red-500 text-white shadow-lg shadow-red-500/20' 
+                : 'btn-premium'
             }`}
           >
-            {tracking ? 'Parar Rastreamento' : 'Iniciar Rastreamento'}
+            {tracking ? (
+              <><Square className="h-4 w-4" /> PARAR</>
+            ) : (
+              <><Play className="h-4 w-4 fill-current" /> INICIAR TRIP</>
+            )}
           </button>
         </div>
 
-        <div className="h-[400px] rounded-lg overflow-hidden relative bg-gray-900">
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="bg-white/2 border border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center">
+            <Activity className="h-4 w-4 text-orange-500 mb-2 opacity-50" />
+            <span className="text-[10px] font-black text-gray-600 uppercase mb-1">Velocidade</span>
+            <span className="text-xl font-bold text-white font-orbitron">{currentSpeed.toFixed(0)} <span className="text-[8px] opacity-40">KM/H</span></span>
+          </div>
+          <div className="bg-white/2 border border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center">
+            <Navigation className="h-4 w-4 text-orange-500 mb-2 opacity-50" />
+            <span className="text-[10px] font-black text-gray-600 uppercase mb-1">Esta Trip</span>
+            <span className="text-xl font-bold text-white font-orbitron">{sessionDistance.toFixed(2)} <span className="text-[8px] opacity-40">KM</span></span>
+          </div>
+          <div className="bg-white/2 border border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center">
+            <Gauge className="h-4 w-4 text-orange-500 mb-2 opacity-50" />
+            <span className="text-[10px] font-black text-gray-600 uppercase mb-1">Total Hist.</span>
+            <span className="text-xl font-bold text-white font-orbitron">{totalDistance.toFixed(1)} <span className="text-[8px] opacity-40">KM</span></span>
+          </div>
+        </div>
+
+        <div className="h-[350px] rounded-[30px] overflow-hidden relative shadow-inner border border-white/5">
           <MapContainer
-            center={[-23.5505, -46.6333]}
-            zoom={13}
+            center={locations[locations.length-1] ? [locations[locations.length-1].latitude, locations[locations.length-1].longitude] : [-23.5505, -46.6333]}
+            zoom={15}
             style={{ height: '100%', width: '100%' }}
-            className="z-0"
+            className="z-0 grayscale contrast-125 brightness-75 invert hue-rotate-180"
           >
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             />
             {locations.length > 1 && (
               <>
                 <Polyline
                   positions={locations.map(loc => [loc.latitude, loc.longitude])}
-                  color="#EAB308"
-                  weight={3}
-                  opacity={0.7}
+                  color="#f97316"
+                  weight={4}
+                  opacity={1}
                 />
                 <Marker
                   position={[
@@ -220,6 +269,9 @@ export function TrackingMap({ motoId, standalone = false, onLocationUpdate }: Tr
             )}
             <MapController locations={locations} />
           </MapContainer>
+          
+          {/* Map Overlay Shadow */}
+          <div className="absolute inset-0 pointer-events-none shadow-[inset_0_0_80px_rgba(0,0,0,0.4)] rounded-[30px]"></div>
         </div>
       </div>
     </div>
