@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Calendar, Wrench, X } from 'lucide-react';
+import { Calendar, Wrench, X, Check, DollarSign } from 'lucide-react';
 
 const TIPOS_MANUTENCAO = [
   'Óleo',
@@ -31,6 +31,7 @@ export function NovaManutencao({
 }: NovaManutencaoProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
   const [formData, setFormData] = useState({
     tipo: tipoPreSelecionado || '',
     data: new Date().toISOString().split('T')[0],
@@ -57,7 +58,7 @@ export function NovaManutencao({
           tipo: formData.tipo,
           data: new Date(formData.data).toISOString(),
           quilometragem: parseInt(formData.quilometragem),
-          custo: parseFloat(formData.custo),
+          custo: parseFloat(formData.custo) || 0,
           local: formData.local,
           observacoes: formData.observacoes
         }]);
@@ -76,8 +77,11 @@ export function NovaManutencao({
 
       if (updateError) throw updateError;
 
-      onSuccess();
-      onClose();
+      setSuccess(true);
+      setTimeout(() => {
+        onSuccess();
+        onClose();
+      }, 1500);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -86,130 +90,140 @@ export function NovaManutencao({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-gray-700">
-        <div className="p-4 border-b border-gray-700 flex justify-between items-center">
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Wrench className="h-5 w-5 text-yellow-400" />
-            Nova Manutenção
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-300"
-          >
-            <X className="h-5 w-5" />
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+      <div className="glass-card w-full max-w-lg border-white/10 shadow-3xl overflow-hidden animate-slide-up">
+        {/* Header */}
+        <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/2">
+          <div className="flex items-center gap-3">
+             <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center">
+                <Wrench className="h-6 w-6 text-black" />
+             </div>
+             <div>
+                <h2 className="text-xl font-bold text-white font-orbitron tracking-tight">
+                  REGISTRAR SERVIÇO
+                </h2>
+                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Manutenção Corretiva/Preventiva</p>
+             </div>
+          </div>
+          <button onClick={onClose} className="p-2 text-gray-500 hover:text-white transition-colors">
+            <X className="h-6 w-6" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
-          {error && (
-            <div className="p-3 rounded-md bg-red-900/50 border border-red-500 text-red-200 text-sm">
-              {error}
-            </div>
-          )}
+        {/* Content */}
+        <div className="p-8">
+           {success ? (
+             <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center animate-bounce">
+                   <Check className="h-8 w-8 text-black" />
+                </div>
+                <h3 className="text-xl font-bold text-white font-orbitron">SERVIÇO SALVO!</h3>
+                <p className="text-gray-500 text-sm">Registro atualizado com sucesso.</p>
+             </div>
+           ) : (
+             <form onSubmit={handleSubmit} className="space-y-6">
+                {error && (
+                  <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-bold uppercase">
+                    {error}
+                  </div>
+                )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              Tipo de Manutenção
-            </label>
-            <select
-              name="tipo"
-              value={formData.tipo}
-              onChange={(e) => setFormData(prev => ({ ...prev, tipo: e.target.value }))}
-              className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-              required
-            >
-              <option value="">Selecione o tipo</option>
-              {TIPOS_MANUTENCAO.map(tipo => (
-                <option key={tipo} value={tipo}>{tipo}</option>
-              ))}
-            </select>
-          </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Tipo de Serviço</label>
+                  <select
+                    value={formData.tipo}
+                    onChange={(e) => setFormData({...formData, tipo: e.target.value})}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:ring-2 focus:ring-orange-500 outline-none transition-all appearance-none"
+                    required
+                  >
+                    <option value="" className="bg-gray-900">Selecione...</option>
+                    {TIPOS_MANUTENCAO.map(tipo => (
+                      <option key={tipo} value={tipo} className="bg-gray-900">{tipo}</option>
+                    ))}
+                  </select>
+                </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Data
-              </label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                <input
-                  type="date"
-                  name="data"
-                  value={formData.data}
-                  onChange={(e) => setFormData(prev => ({ ...prev, data: e.target.value }))}
-                  className="pl-10 w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                  required
-                />
-              </div>
-            </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Data</label>
+                    <div className="relative">
+                      <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600" />
+                      <input
+                        type="date"
+                        value={formData.data}
+                        onChange={(e) => setFormData({...formData, data: e.target.value})}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl p-4 pl-12 text-white focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Quilometragem</label>
+                    <input
+                      type="number"
+                      value={formData.quilometragem}
+                      onChange={(e) => setFormData({...formData, quilometragem: e.target.value})}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-orange-500 font-orbitron font-bold focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                      required
+                    />
+                  </div>
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Quilometragem
-              </label>
-              <input
-                type="number"
-                name="quilometragem"
-                value={formData.quilometragem}
-                onChange={(e) => setFormData(prev => ({ ...prev, quilometragem: e.target.value }))}
-                className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                required
-                min="0"
-              />
-            </div>
-          </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Custo Total</label>
+                    <div className="relative">
+                      <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600" />
+                      <input
+                        type="number"
+                        value={formData.custo}
+                        onChange={(e) => setFormData({...formData, custo: e.target.value})}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl p-4 pl-12 text-white focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                        step="0.01"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Local / Oficina</label>
+                    <input
+                      type="text"
+                      value={formData.local}
+                      onChange={(e) => setFormData({...formData, local: e.target.value})}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                      placeholder="Nome da oficina"
+                    />
+                  </div>
+                </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              Custo (R$)
-            </label>
-            <input
-              type="number"
-              name="custo"
-              value={formData.custo}
-              onChange={(e) => setFormData(prev => ({ ...prev, custo: e.target.value }))}
-              className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-              required
-              min="0"
-              step="0.01"
-            />
-          </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Observações</label>
+                  <textarea
+                    value={formData.observacoes}
+                    onChange={(e) => setFormData({...formData, observacoes: e.target.value})}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                    rows={3}
+                  />
+                </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              Local
-            </label>
-            <input
-              type="text"
-              name="local"
-              value={formData.local}
-              onChange={(e) => setFormData(prev => ({ ...prev, local: e.target.value }))}
-              className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              Observações
-            </label>
-            <textarea
-              name="observacoes"
-              value={formData.observacoes}
-              onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))}
-              className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-              rows={3}
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-yellow-500 text-gray-900 py-2 px-4 rounded-md hover:bg-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-gray-800 disabled:opacity-50 font-medium"
-          >
-            {loading ? 'Salvando...' : 'Salvar Manutenção'}
-          </button>
-        </form>
+                <div className="pt-4 flex gap-4">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="flex-1 px-6 py-4 rounded-xl border border-white/10 text-gray-400 font-bold uppercase tracking-widest hover:bg-white/5 transition-all text-xs"
+                  >
+                    CANCELAR
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-[2] btn-premium"
+                  >
+                    {loading ? 'SALVANDO...' : 'REGISTRAR'}
+                  </button>
+                </div>
+             </form>
+           )}
+        </div>
       </div>
     </div>
   );

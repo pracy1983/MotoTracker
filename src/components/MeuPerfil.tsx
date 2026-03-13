@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { User, Mail, Phone, Trash2, Save, AlertTriangle } from 'lucide-react';
+import { User, Mail, Phone, Trash2, Save, AlertTriangle, ArrowLeft, LogOut } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -83,152 +83,158 @@ export function MeuPerfil() {
     }
   };
 
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.reload();
+  };
+
   const handleDeleteAccount = async () => {
     if (!profile) return;
     setDeleting(true);
     
     try {
       // Primeiro, deletar todos os dados do usuário
-      const { error: rotasError } = await supabase
-        .from('rotas')
-        .delete()
-        .eq('motocicleta_id', profile.id);
+      await supabase.from('manutencoes').delete().eq('user_id', profile.id);
+      await supabase.from('motocicletas').delete().eq('user_id', profile.id);
+      await supabase.from('profiles').delete().eq('id', profile.id);
 
-      if (rotasError) throw rotasError;
-
-      const { error: manutencoesError } = await supabase
-        .from('manutencoes')
-        .delete()
-        .eq('user_id', profile.id);
-
-      if (manutencoesError) throw manutencoesError;
-
-      const { error: motosError } = await supabase
-        .from('motocicletas')
-        .delete()
-        .eq('user_id', profile.id);
-
-      if (motosError) throw motosError;
-
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', profile.id);
-
-      if (profileError) throw profileError;
-
-      // Por fim, deletar a conta do usuário
-      const { error: signOutError } = await supabase.auth.signOut();
-      if (signOutError) throw signOutError;
-
+      await supabase.auth.signOut();
       window.location.reload();
     } catch (error: any) {
       console.error('Erro ao deletar conta:', error);
       alert('Erro ao deletar conta: ' + (error.message || 'Tente novamente.'));
       setDeleting(false);
-      setShowDeleteConfirm(false);
     }
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center p-8">
-        <div className="text-gray-400">Carregando...</div>
+      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
+        <div className="w-10 h-10 border-4 border-orange-500/20 border-t-orange-500 rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-2xl">
-      <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
-        <User className="h-6 w-6 text-yellow-400" />
-        Meu Perfil
-      </h2>
+    <div className="max-w-2xl mx-auto space-y-8 pb-32">
+       <div>
+          <h2 className="text-3xl font-bold text-white font-orbitron tracking-tighter uppercase">
+            Meu Perfil
+          </h2>
+          <p className="text-gray-500 text-sm font-medium uppercase tracking-widest">Gerencie seus dados e conta</p>
+        </div>
 
-      <div className="bg-gray-800/90 backdrop-blur-sm rounded-lg p-6 border border-gray-700 shadow-xl space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">
-            Email
-          </label>
-          <div className="flex items-center gap-2 text-gray-400 bg-gray-700/50 p-2 rounded-md">
-            <Mail className="h-5 w-5 text-gray-500" />
-            {profile?.email}
+      <div className="glass-card p-8 border-white/5 shadow-2xl space-y-8">
+        <div className="flex items-center gap-6">
+           <div className="w-20 h-20 bg-orange-500/10 rounded-3xl flex items-center justify-center border border-orange-500/20">
+              <User className="h-10 w-10 text-orange-500" />
+           </div>
+           <div>
+              <h3 className="text-xl font-bold text-white font-orbitron">{profile?.name || 'Piloto'}</h3>
+              <p className="text-gray-500 text-xs uppercase font-black tracking-widest mt-1 opacity-60">Status: Premium</p>
+           </div>
+        </div>
+
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">E-mail (Permanente)</label>
+            <div className="w-full bg-white/2 border border-white/5 rounded-xl p-4 text-gray-500 flex items-center gap-3">
+              <Mail className="h-4 w-4" />
+              <span className="text-sm font-medium">{profile?.email}</span>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Nome de Exibição</label>
+            <div className="relative group">
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-600 group-focus-within:text-orange-500 transition-colors" />
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                className="w-full bg-white/5 border border-white/10 rounded-xl p-4 pl-12 text-white focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                placeholder="Seu nome"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Telefone / WhatsApp</label>
+            <div className="relative group">
+              <Phone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-600 group-focus-within:text-orange-500 transition-colors" />
+              <input
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                className="w-full bg-white/5 border border-white/10 rounded-xl p-4 pl-12 text-white focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                placeholder="Telefone"
+              />
+            </div>
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">
-            Nome
-          </label>
-          <input
-            type="text"
-            value={formData.name}
-            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-            className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">
-            Telefone
-          </label>
-          <input
-            type="tel"
-            value={formData.phone}
-            onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-            className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-          />
-        </div>
-
-        <div className="flex justify-end">
+        <div className="pt-4 flex flex-col gap-4">
           <button
             onClick={handleSave}
             disabled={saving}
-            className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-gray-900 px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl disabled:opacity-50"
+            className="btn-premium w-full flex items-center justify-center gap-2"
           >
-            <Save className="h-5 w-5" />
-            {saving ? 'Salvando...' : 'Salvar Alterações'}
+            {saving ? 'SALVANDO...' : (
+               <>
+                 <Save className="h-5 w-5 font-black" />
+                 SALVAR ALTERAÇÕES
+               </>
+            )}
+          </button>
+          
+          <button
+            onClick={handleLogout}
+            className="w-full py-4 rounded-xl border border-white/5 bg-white/2 text-gray-400 font-black uppercase tracking-widest hover:bg-red-500/10 hover:text-red-500 transition-all flex items-center justify-center gap-2 text-[10px]"
+          >
+            <LogOut className="h-4 w-4" />
+            ENCERRAR SESSÃO
           </button>
         </div>
 
-        <div className="pt-6 border-t border-gray-700">
+        <div className="pt-8 border-t border-white/5">
           <button
             onClick={() => setShowDeleteConfirm(true)}
-            className="text-red-400 hover:text-red-300 flex items-center gap-2"
+            className="text-[10px] font-black text-red-900 hover:text-red-600 uppercase tracking-tighter transition-colors flex items-center gap-2"
           >
-            <Trash2 className="h-5 w-5" />
-            Deletar Conta
+            <Trash2 className="h-3 w-3" />
+            DELETAR MINHA CONTA PERMANENTEMENTE
           </button>
         </div>
       </div>
 
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full border border-gray-700">
-            <div className="flex items-center gap-2 text-red-400 mb-4">
-              <AlertTriangle className="h-6 w-6" />
-              <h3 className="text-lg font-bold">Confirmar Exclusão</h3>
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[70] p-6 animate-fade-in">
+          <div className="glass-card p-8 max-w-md w-full border-red-500/20 shadow-2xl animate-shake">
+            <div className="flex items-center gap-4 text-red-500 mb-6">
+               <div className="w-12 h-12 bg-red-500/10 rounded-2xl flex items-center justify-center border border-red-500/20">
+                  <AlertTriangle className="h-6 w-6" />
+               </div>
+               <h3 className="text-xl font-bold font-orbitron uppercase tracking-widest">AVISO CRÍTICO</h3>
             </div>
 
-            <p className="text-gray-300 mb-6">
-              Tem certeza que deseja deletar sua conta? Esta ação não pode ser desfeita e todos os seus dados serão perdidos.
+            <p className="text-gray-400 mb-8 font-medium">
+              Esta ação irá <span className="text-red-500 font-bold">DELETAR PERMANENTEMENTE</span> sua conta e todos os dados de manutenção, motos e percursos. Não há volta.
             </p>
 
-            <div className="flex justify-end gap-3">
+            <div className="grid grid-cols-2 gap-4">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="px-4 py-2 rounded-md bg-gray-700 text-gray-300 hover:bg-gray-600"
+                className="px-6 py-4 rounded-xl bg-white/5 text-gray-400 font-bold uppercase tracking-widest hover:bg-white/10 transition-all text-xs"
                 disabled={deleting}
               >
-                Cancelar
+                CANCELAR
               </button>
               <button
                 onClick={handleDeleteAccount}
                 disabled={deleting}
-                className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 flex items-center gap-2"
+                className="px-6 py-4 rounded-xl bg-red-600 text-white font-bold uppercase tracking-widest hover:bg-red-700 transition-all text-xs shadow-lg shadow-red-600/20"
               >
-                <Trash2 className="h-4 w-4" />
-                {deleting ? 'Deletando...' : 'Confirmar Exclusão'}
+                {deleting ? 'DELETANDO...' : 'DELETAR AGORA'}
               </button>
             </div>
           </div>

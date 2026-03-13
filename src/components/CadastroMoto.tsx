@@ -1,39 +1,28 @@
 import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { X, Bike, Calendar, Gauge } from 'lucide-react';
+import { X, Bike, Calendar, Gauge, Check } from 'lucide-react';
 
 interface CadastroMotoProps {
   onClose?: () => void;
+  motoParaEditar?: any;
+  onSuccess?: () => void;
 }
 
-export function CadastroMoto({ onClose }: CadastroMotoProps) {
+export function CadastroMoto({ onClose, motoParaEditar, onSuccess }: CadastroMotoProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [formData, setFormData] = useState({
-    marca: '',
-    modelo: '',
-    cilindradas: '',
-    ano: new Date().getFullYear(),
-    quilometragem_atual: '',
-    placa: '',
-    cor: ''
+    marca: motoParaEditar?.marca || '',
+    modelo: motoParaEditar?.modelo || '',
+    cilindradas: motoParaEditar?.cilindradas?.toString() || '',
+    ano: motoParaEditar?.ano || new Date().getFullYear(),
+    quilometragem_atual: motoParaEditar?.quilometragem_atual?.toString() || '',
+    placa: motoParaEditar?.placa || '',
+    cor: motoParaEditar?.cor || ''
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-  const marcasComuns = [
-    'Honda',
-    'Yamaha',
-    'Kawasaki',
-    'Suzuki',
-    'BMW',
-    'Harley-Davidson',
-    'Ducati',
-    'KTM',
-    'Triumph',
-    'Royal Enfield'
-  ];
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -41,16 +30,11 @@ export function CadastroMoto({ onClose }: CadastroMotoProps) {
     if (!formData.marca) newErrors.marca = 'Marca é obrigatória';
     if (!formData.modelo) newErrors.modelo = 'Modelo é obrigatório';
     if (!formData.cilindradas) newErrors.cilindradas = 'Cilindradas é obrigatório';
-    if (!formData.placa) {
-      newErrors.placa = 'Placa é obrigatória';
-    } else if (!/^[A-Z]{3}[0-9][0-9A-Z][0-9]{2}$/.test(formData.placa)) {
-      newErrors.placa = 'Placa inválida. Use o formato ABC1234 ou ABC1D23';
+    if (formData.placa && !/^[A-Z]{3}[0-9][0-9A-Z][0-9]{2}$/.test(formData.placa.toUpperCase())) {
+      newErrors.placa = 'Formato inválido (ABC1234 ou ABC1D23)';
     }
     if (formData.ano < 1900 || formData.ano > new Date().getFullYear() + 1) {
       newErrors.ano = 'Ano inválido';
-    }
-    if (parseInt(formData.quilometragem_atual) < 0) {
-      newErrors.quilometragem_atual = 'Quilometragem não pode ser negativa';
     }
 
     setErrors(newErrors);
@@ -59,42 +43,41 @@ export function CadastroMoto({ onClose }: CadastroMotoProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setLoading(true);
     setError('');
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        setError('Usuário não autenticado');
-        return;
+      if (!user) throw new Error('Usuário não autenticado');
+
+      const dataToSave = {
+        ...formData,
+        placa: formData.placa.toUpperCase(),
+        cilindradas: parseInt(formData.cilindradas) || 0,
+        quilometragem_atual: parseInt(formData.quilometragem_atual) || 0,
+        user_id: user.id
+      };
+
+      if (motoParaEditar) {
+        const { error: updateError } = await supabase
+          .from('motocicletas')
+          .update(dataToSave)
+          .eq('id', motoParaEditar.id);
+        if (updateError) throw updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from('motocicletas')
+          .insert([dataToSave]);
+        if (insertError) throw insertError;
       }
-
-      const { error: insertError } = await supabase
-        .from('motocicletas')
-        .insert([
-          {
-            ...formData,
-            cilindradas: parseInt(formData.cilindradas) || 0,
-            quilometragem_atual: parseInt(formData.quilometragem_atual) || 0,
-            user_id: user.id
-          }
-        ]);
-
-      if (insertError) throw insertError;
       
       setSuccess(true);
       setTimeout(() => {
-        if (onClose) {
-          onClose();
-        }
-        window.location.reload();
-      }, 2000);
+        if (onSuccess) onSuccess();
+        if (onClose) onClose();
+      }, 1500);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -102,200 +85,143 @@ export function CadastroMoto({ onClose }: CadastroMotoProps) {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: name === 'ano' ? parseInt(value) || new Date().getFullYear() : value
-    }));
-  };
-
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-800/90 backdrop-blur-md rounded-lg shadow-2xl max-w-md w-full border border-gray-700">
-        <div className="flex justify-between items-center p-4 border-b border-gray-700">
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Bike className="h-5 w-5 text-yellow-400" />
-            {success ? 'Sucesso!' : 'Cadastrar Nova Moto'}
-          </h2>
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-300 transition-colors"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          )}
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+      <div className="glass-card w-full max-w-lg border-white/10 shadow-3xl overflow-hidden animate-slide-up">
+        {/* Header */}
+        <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/2">
+          <div className="flex items-center gap-3">
+             <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center">
+                <Bike className="h-6 w-6 text-black" />
+             </div>
+             <div>
+                <h2 className="text-xl font-bold text-white font-orbitron tracking-tight">
+                  {motoParaEditar ? 'EDITAR MOTO' : 'NOVA MOTO'}
+                </h2>
+                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Detalhes técnicos</p>
+             </div>
+          </div>
+          <button onClick={onClose} className="p-2 text-gray-500 hover:text-white transition-colors">
+            <X className="h-6 w-6" />
+          </button>
         </div>
 
-        <div className="p-4">
-          {success ? (
-            <div className="text-center py-8">
-              <h2 className="text-2xl font-bold text-green-400 mb-4">Moto cadastrada com sucesso!</h2>
-              <p className="text-gray-300">Você já pode começar a acompanhar suas manutenções.</p>
-            </div>
-          ) : (
-            <>
-              {error && (
-                <div className="mb-4 p-3 rounded-md bg-red-900/50 border border-red-500 text-red-200 text-sm">
-                  {error}
+        {/* Content */}
+        <div className="p-8">
+           {success ? (
+             <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center animate-bounce">
+                   <Check className="h-8 w-8 text-black" />
                 </div>
-              )}
+                <h3 className="text-xl font-bold text-white font-orbitron">MÁQUINA PRONTA!</h3>
+                <p className="text-gray-500 text-sm">Dados salvos com sucesso na garagem.</p>
+             </div>
+           ) : (
+             <form onSubmit={handleSubmit} className="space-y-6">
+                {error && (
+                  <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-bold uppercase">
+                    {error}
+                  </div>
+                )}
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
-                    Marca
-                  </label>
-                  <div className="relative">
-                    <Bike className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                    <select
-                      name="marca"
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Marca</label>
+                    <input
+                      type="text"
                       value={formData.marca}
-                      onChange={handleChange}
-                      className="pl-10 w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                      required
-                    >
-                      <option value="">Selecione uma marca</option>
-                      {marcasComuns.map(marca => (
-                        <option key={marca} value={marca}>{marca}</option>
-                      ))}
-                      <option value="Outra">Outra</option>
-                    </select>
+                      onChange={(e) => setFormData({...formData, marca: e.target.value})}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                      placeholder="Ex: Honda"
+                    />
+                    {errors.marca && <p className="text-[10px] text-red-500 mt-1 ml-1">{errors.marca}</p>}
                   </div>
-                  {errors.marca && (
-                    <p className="text-red-400 text-sm mt-1">{errors.marca}</p>
-                  )}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Modelo</label>
+                    <input
+                      type="text"
+                      value={formData.modelo}
+                      onChange={(e) => setFormData({...formData, modelo: e.target.value})}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:ring-2 focus:ring-orange-500 outline-none transition-all"
+                      placeholder="Ex: Hornet"
+                    />
+                    {errors.modelo && <p className="text-[10px] text-red-500 mt-1 ml-1">{errors.modelo}</p>}
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
-                    Modelo
-                  </label>
-                  <input
-                    type="text"
-                    name="modelo"
-                    value={formData.modelo}
-                    onChange={handleChange}
-                    className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                    required
-                  />
-                  {errors.modelo && (
-                    <p className="text-red-400 text-sm mt-1">{errors.modelo}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
-                    Placa
-                  </label>
-                  <input
-                    type="text"
-                    name="placa"
-                    value={formData.placa.toUpperCase()}
-                    onChange={handleChange}
-                    className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                    required
-                    placeholder="ABC1234"
-                    maxLength={7}
-                  />
-                  {errors.placa && (
-                    <p className="text-red-400 text-sm mt-1">{errors.placa}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
-                    Cor
-                  </label>
-                  <input
-                    type="text"
-                    name="cor"
-                    value={formData.cor}
-                    onChange={handleChange}
-                    className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                    required
-                    placeholder="Ex: Vermelho"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
-                    Cilindradas
-                  </label>
-                  <div className="relative">
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">CC</label>
                     <input
                       type="number"
-                      name="cilindradas"
                       value={formData.cilindradas}
-                      onChange={handleChange}
-                      className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent pr-10"
-                      required
-                      min="0"
-                      placeholder="Ex: 150"
+                      onChange={(e) => setFormData({...formData, cilindradas: e.target.value})}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:ring-2 focus:ring-orange-500 outline-none transition-all text-center"
+                      placeholder="600"
                     />
-                    <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-                      cc
-                    </span>
                   </div>
-                  {errors.cilindradas && (
-                    <p className="text-red-400 text-sm mt-1">{errors.cilindradas}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
-                    Ano
-                  </label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Ano</label>
                     <input
                       type="number"
-                      name="ano"
                       value={formData.ano}
-                      onChange={handleChange}
-                      min="1900"
-                      max={new Date().getFullYear() + 1}
-                      className="pl-10 w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                      required
+                      onChange={(e) => setFormData({...formData, ano: parseInt(e.target.value)})}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:ring-2 focus:ring-orange-500 outline-none transition-all text-center"
                     />
                   </div>
-                  {errors.ano && (
-                    <p className="text-red-400 text-sm mt-1">{errors.ano}</p>
-                  )}
+                   <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Cor</label>
+                    <input
+                      type="text"
+                      value={formData.cor}
+                      onChange={(e) => setFormData({...formData, cor: e.target.value})}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:ring-2 focus:ring-orange-500 outline-none transition-all text-center"
+                      placeholder="Preta"
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
-                    Quilometragem Atual
-                  </label>
-                  <div className="relative">
-                    <Gauge className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">KM Atual</label>
                     <input
                       type="number"
-                      name="quilometragem_atual"
                       value={formData.quilometragem_atual}
-                      onChange={handleChange}
-                      min="0"
-                      className="pl-10 w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                      required
+                      onChange={(e) => setFormData({...formData, quilometragem_atual: e.target.value})}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-orange-500 font-orbitron font-bold focus:ring-2 focus:ring-orange-500 outline-none transition-all"
                     />
                   </div>
-                  {errors.quilometragem_atual && (
-                    <p className="text-red-400 text-sm mt-1">{errors.quilometragem_atual}</p>
-                  )}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Placa</label>
+                    <input
+                      type="text"
+                      value={formData.placa}
+                      onChange={(e) => setFormData({...formData, placa: e.target.value})}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:ring-2 focus:ring-orange-500 outline-none transition-all uppercase tracking-widest"
+                      placeholder="ABC1234"
+                    />
+                    {errors.placa && <p className="text-[10px] text-red-500 mt-1 ml-1">{errors.placa}</p>}
+                  </div>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-yellow-500 text-gray-900 py-2 px-4 rounded-md hover:bg-yellow-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-gray-800 disabled:opacity-50 font-medium transition-all duration-300 transform hover:-translate-y-1"
-                >
-                  {loading ? 'Cadastrando...' : 'Cadastrar Moto'}
-                </button>
-              </form>
-            </>
-          )}
+                <div className="pt-4 flex gap-4">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="flex-1 px-6 py-4 rounded-xl border border-white/10 text-gray-400 font-bold uppercase tracking-widest hover:bg-white/5 transition-all text-xs"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-[2] btn-premium"
+                  >
+                    {loading ? 'Salvando...' : motoParaEditar ? 'ATUALIZAR' : 'CADASTRAR'}
+                  </button>
+                </div>
+             </form>
+           )}
         </div>
       </div>
     </div>

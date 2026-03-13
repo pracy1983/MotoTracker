@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Auth } from './components/Auth';
 import { Dashboard } from './components/Dashboard';
-import { Header } from './components/Header';
+import { Navigation } from './components/Navigation';
 import { MapaRota } from './components/MapaRota';
 import { ManutencoesProgramadas } from './components/ManutencoesProgramadas';
 import { Settings } from './components/Settings';
@@ -76,9 +76,9 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen">
-      <Header onNavigate={setCurrentPage} />
-      <main className="container mx-auto px-4 py-8 mt-16">
+    <div className="min-h-screen pb-24 md:pb-8 md:pt-24">
+      <Navigation currentPage={currentPage} onNavigate={setCurrentPage} />
+      <main className="container mx-auto px-4 py-8">
         {renderContent()}
       </main>
     </div>

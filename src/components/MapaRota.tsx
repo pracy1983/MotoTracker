@@ -42,23 +42,21 @@ export function MapaRota({ motoId, standalone = false }: RouteTrackerProps) {
   }, [motoId]);
 
   const handleLocationUpdate = async (location: Location) => {
-    // Aqui você pode implementar lógica adicional quando a localização é atualizada
-    // Por exemplo, notificar outros componentes ou fazer chamadas para APIs
     console.log('Nova localização:', location);
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {motos.length > 1 && standalone && (
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
+        <div className="flex gap-3 overflow-x-auto pb-4 no-scrollbar">
           {motos.map((moto) => (
             <button
               key={moto.id}
               onClick={() => setSelectedMoto(moto)}
-              className={`px-4 py-2 rounded-lg transition-all duration-300 whitespace-nowrap ${
+              className={`px-6 py-2 rounded-full font-bold text-xs uppercase tracking-widest transition-all duration-300 whitespace-nowrap border-2 ${
                 selectedMoto?.id === moto.id
-                  ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-gray-900 shadow-lg transform -translate-y-0.5'
-                  : 'bg-gradient-to-r from-gray-700 to-gray-800 text-gray-300 hover:from-gray-600 hover:to-gray-700'
+                  ? 'bg-orange-500 border-orange-500 text-black shadow-lg shadow-orange-500/20'
+                  : 'bg-transparent border-white/10 text-gray-400 hover:border-white/20'
               }`}
             >
               {moto.marca} {moto.modelo}
@@ -67,11 +65,16 @@ export function MapaRota({ motoId, standalone = false }: RouteTrackerProps) {
         </div>
       )}
 
-      <TrackingMap
-        motoId={selectedMoto?.id}
-        standalone={standalone}
-        onLocationUpdate={handleLocationUpdate}
-      />
+      <div className={`relative ${standalone ? 'h-[70vh]' : 'h-full'} rounded-3xl overflow-hidden border border-white/5 shadow-2xl`}>
+        <TrackingMap
+          motoId={selectedMoto?.id}
+          standalone={standalone}
+          onLocationUpdate={handleLocationUpdate}
+        />
+        
+        {/* Decorative Overlay for Map */}
+        <div className="absolute inset-0 pointer-events-none ring-1 ring-inset ring-white/10 rounded-3xl"></div>
+      </div>
     </div>
   );
 }

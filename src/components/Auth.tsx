@@ -2,92 +2,18 @@ import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Lock, Mail, User, Phone, Bike, Eye, EyeOff } from 'lucide-react';
 
-// Lista de DDIs mais comuns
 const DDI_LIST = [
   { code: '55', country: 'Brasil' },
   { code: '1', country: 'Estados Unidos/Canadá' },
-  { code: '44', country: 'Reino Unido' },
   { code: '351', country: 'Portugal' },
-  { code: '34', country: 'Espanha' },
-  { code: '33', country: 'França' },
-  { code: '39', country: 'Itália' },
-  { code: '49', country: 'Alemanha' },
-  { code: '81', country: 'Japão' },
-  { code: '86', country: 'China' },
-  { code: '7', country: 'Rússia' },
-  { code: '61', country: 'Austrália' },
-  { code: '64', country: 'Nova Zelândia' },
-  { code: '52', country: 'México' },
-  { code: '54', country: 'Argentina' },
-  { code: '56', country: 'Chile' },
-  { code: '57', country: 'Colômbia' },
-  { code: '58', country: 'Venezuela' },
-  { code: '51', country: 'Peru' },
-  { code: '595', country: 'Paraguai' },
-  { code: '598', country: 'Uruguai' },
-  { code: '591', country: 'Bolívia' },
-  { code: '593', country: 'Equador' },
-  { code: '20', country: 'Egito' },
-  { code: '27', country: 'África do Sul' },
-  { code: '91', country: 'Índia' },
-  { code: '82', country: 'Coreia do Sul' },
-  { code: '84', country: 'Vietnã' },
-  { code: '66', country: 'Tailândia' },
-  { code: '65', country: 'Singapura' },
-  { code: '60', country: 'Malásia' },
-  { code: '62', country: 'Indonésia' },
-  { code: '31', country: 'Holanda' },
-  { code: '32', country: 'Bélgica' },
-  { code: '41', country: 'Suíça' },
-  { code: '43', country: 'Áustria' },
-  { code: '46', country: 'Suécia' },
-  { code: '47', country: 'Noruega' },
-  { code: '45', country: 'Dinamarca' },
-  { code: '358', country: 'Finlândia' }
 ];
 
-// Lista de DDDs do Brasil
 const DDD_LIST = [
-  // Norte
-  { ddd: '68', estado: 'AC' }, { ddd: '96', estado: 'AP' },
-  { ddd: '92', estado: 'AM' }, { ddd: '97', estado: 'AM' },
-  { ddd: '91', estado: 'PA' }, { ddd: '93', estado: 'PA' },
-  { ddd: '94', estado: 'PA' }, { ddd: '69', estado: 'RO' },
-  { ddd: '95', estado: 'RR' }, { ddd: '63', estado: 'TO' },
-  // Nordeste
-  { ddd: '82', estado: 'AL' }, { ddd: '71', estado: 'BA' },
-  { ddd: '73', estado: 'BA' }, { ddd: '74', estado: 'BA' },
-  { ddd: '75', estado: 'BA' }, { ddd: '77', estado: 'BA' },
-  { ddd: '85', estado: 'CE' }, { ddd: '88', estado: 'CE' },
-  { ddd: '98', estado: 'MA' }, { ddd: '99', estado: 'MA' },
-  { ddd: '83', estado: 'PB' }, { ddd: '81', estado: 'PE' },
-  { ddd: '87', estado: 'PE' }, { ddd: '86', estado: 'PI' },
-  { ddd: '89', estado: 'PI' }, { ddd: '84', estado: 'RN' },
-  { ddd: '79', estado: 'SE' },
-  // Centro-Oeste
-  { ddd: '61', estado: 'DF' }, { ddd: '62', estado: 'GO' },
-  { ddd: '64', estado: 'GO' }, { ddd: '65', estado: 'MT' },
-  { ddd: '66', estado: 'MT' }, { ddd: '67', estado: 'MS' },
-  // Sudeste
-  { ddd: '27', estado: 'ES' }, { ddd: '28', estado: 'ES' },
-  { ddd: '31', estado: 'MG' }, { ddd: '32', estado: 'MG' },
-  { ddd: '33', estado: 'MG' }, { ddd: '34', estado: 'MG' },
-  { ddd: '35', estado: 'MG' }, { ddd: '37', estado: 'MG' },
-  { ddd: '38', estado: 'MG' }, { ddd: '21', estado: 'RJ' },
-  { ddd: '22', estado: 'RJ' }, { ddd: '24', estado: 'RJ' },
-  { ddd: '11', estado: 'SP' }, { ddd: '12', estado: 'SP' },
-  { ddd: '13', estado: 'SP' }, { ddd: '14', estado: 'SP' },
-  { ddd: '15', estado: 'SP' }, { ddd: '16', estado: 'SP' },
-  { ddd: '17', estado: 'SP' }, { ddd: '18', estado: 'SP' },
-  { ddd: '19', estado: 'SP' },
-  // Sul
-  { ddd: '41', estado: 'PR' }, { ddd: '42', estado: 'PR' },
-  { ddd: '43', estado: 'PR' }, { ddd: '44', estado: 'PR' },
-  { ddd: '45', estado: 'PR' }, { ddd: '46', estado: 'PR' },
-  { ddd: '51', estado: 'RS' }, { ddd: '53', estado: 'RS' },
-  { ddd: '54', estado: 'RS' }, { ddd: '55', estado: 'RS' },
-  { ddd: '47', estado: 'SC' }, { ddd: '48', estado: 'SC' },
-  { ddd: '49', estado: 'SC' }
+  { ddd: '11', estado: 'SP' }, { ddd: '21', estado: 'RJ' },
+  { ddd: '31', estado: 'MG' }, { ddd: '41', estado: 'PR' },
+  { ddd: '51', estado: 'RS' }, { ddd: '61', estado: 'DF' },
+  { ddd: '71', estado: 'BA' }, { ddd: '81', estado: 'PE' },
+  { ddd: '85', estado: 'CE' }, { ddd: '91', estado: 'PA' },
 ];
 
 export function Auth() {
@@ -98,368 +24,174 @@ export function Auth() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState('');
   const [name, setName] = useState('');
-  const [ddi, setDdi] = useState('55');
-  const [ddd, setDdd] = useState('');
   const [phone, setPhone] = useState('');
-  const [cadastrarMoto, setCadastrarMoto] = useState(true);
-  const [motoData, setMotoData] = useState({
-    marca: '',
-    modelo: '',
-    ano: new Date().getFullYear(),
-    quilometragem_atual: ''
-  });
+  const [ddd, setDdd] = useState('11');
+  const [ddi, setDdi] = useState('55');
 
-  const handleAuthError = (error: any) => {
-    console.error('Auth error:', error);
-    
-    if (error.message === 'User already registered' || error.code === 'user_already_exists') {
-      setError('Este e-mail já está cadastrado. Por favor, faça login.');
-      setIsSignUp(false);
-      setPassword('');
-      return;
-    }
-
-    switch (error.message) {
-      case 'Invalid login credentials':
-        setError('Email ou senha incorretos.');
-        break;
-      case 'Email not confirmed':
-        setError('Por favor, confirme seu email antes de fazer login.');
-        break;
-      default:
-        setError('Ocorreu um erro. Por favor, tente novamente.');
-    }
-  };
-
-  async function handleSubmit(e: React.FormEvent) {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 6) {
-      setError('A senha deve ter pelo menos 6 caracteres.');
-      return;
-    }
-
     setLoading(true);
     setError('');
 
     try {
       if (isSignUp) {
-        const { data: { user }, error: signUpError } = await supabase.auth.signUp({
+        const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: {
-              name,
-              phone: `+${ddi}${ddd}${phone.replace(/\D/g, '')}`,
+              full_name: name,
+              phone_number: `+${ddi}${ddd}${phone}`,
             },
           },
         });
-
-        if (signUpError) {
-          handleAuthError(signUpError);
-        } else if (user && cadastrarMoto) {
-          // Cadastrar moto se a opção estiver marcada
-          const { error: motoError } = await supabase
-            .from('motocicletas')
-            .insert([{
-              ...motoData,
-              quilometragem_atual: parseInt(motoData.quilometragem_atual) || 0,
-              user_id: user.id
-            }]);
-
-          if (motoError) throw motoError;
-        }
+        if (signUpError) throw signUpError;
+        alert('Cadastro realizado com sucesso! Verifique seu e-mail para confirmar.');
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
-        
-        if (signInError) {
-          handleAuthError(signInError);
-        }
+        if (signInError) throw signInError;
       }
-    } catch (error) {
-      handleAuthError(error);
+    } catch (err: any) {
+      setError(err.message || 'Ocorreu um erro.');
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-gray-900 to-black p-4">
-      <div className="w-full max-w-md">
-        {/* Logo and Branding */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 mb-4">
-            <Bike className="h-8 w-8 text-gray-900" />
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-black">
+      {/* Decorative background elements */}
+      <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-orange-500/10 blur-[120px] rounded-full"></div>
+      <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-orange-500/5 blur-[120px] rounded-full"></div>
+      
+      <div className="w-full max-w-md animate-slide-up z-10">
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-16 h-16 bg-orange-500 rounded-2xl flex items-center justify-center mb-4 shadow-2xl shadow-orange-500/20 rotate-3">
+            <Bike className="h-10 w-10 text-black" />
           </div>
-          <h1 className="text-4xl font-bold text-white mb-2">
-            Moto Tracking
+          <h1 className="text-4xl font-bold font-orbitron tracking-tighter text-white">
+            MOTO<span className="text-orange-500">TRACKER</span>
           </h1>
-          <p className="text-gray-400">
-            Com você em todo o caminho
-          </p>
+          <p className="text-gray-400 mt-2 font-medium">Sua jornada, sob controle.</p>
         </div>
 
-        {/* Auth Form */}
-        <div className="bg-gray-800/90 backdrop-blur-xl rounded-2xl border border-gray-700 shadow-2xl p-8">
-          <h2 className="text-2xl font-bold text-center mb-8 text-white">
-            {isSignUp ? 'Criar Conta' : 'Login'}
+        <div className="glass-card p-8 border-white/5 shadow-2xl">
+          <h2 className="text-xl font-bold text-white mb-6 uppercase tracking-widest text-center font-orbitron">
+            {isSignUp ? 'Criar Conta' : 'Acesse sua conta'}
           </h2>
-          
-          {error && (
-            <div className={`mb-4 p-3 rounded-md text-sm ${
-              error.includes('sucesso') 
-                ? 'bg-green-900/50 border border-green-500 text-green-200'
-                : 'bg-red-900/50 border border-red-500 text-red-200'
-            }`}>
-              {error}
-            </div>
-          )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {isSignUp && (
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Nome Completo
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="pl-10 w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                    required={isSignUp}
-                    placeholder="Seu nome completo"
-                  />
-                </div>
+          <form onSubmit={handleAuth} className="space-y-4">
+            {error && (
+              <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-sm font-medium animate-pulse">
+                {error}
               </div>
             )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Email
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10 w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                  required
-                  placeholder="seu@email.com"
-                />
-              </div>
-            </div>
-
             {isSignUp && (
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Telefone
-                </label>
-                <div className="grid grid-cols-12 gap-2">
-                  <div className="col-span-3">
+              <>
+                <div className="relative group">
+                  <User className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5 group-focus-within:text-orange-500 transition-colors" />
+                  <input
+                    type="text"
+                    placeholder="Nome Completo"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all placeholder:text-gray-600"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-4 gap-2">
+                   <div className="col-span-1 relative">
                     <select
-                      className="w-24 p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                       value={ddi}
                       onChange={(e) => setDdi(e.target.value)}
-                      required={isSignUp}
+                      className="w-full p-4 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-orange-500 text-sm appearance-none"
                     >
-                      {DDI_LIST.map(({ code, country }) => (
-                        <option key={code} value={code}>
-                          +{code} {country}
-                        </option>
+                      {DDI_LIST.map(item => (
+                        <option key={item.code} value={item.code} className="bg-gray-900">+{item.code}</option>
                       ))}
                     </select>
                   </div>
-                  {ddi === '55' ? (
-                    <div className="col-span-3">
-                      <select
-                        className="w-24 p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                        value={ddd}
-                        onChange={(e) => setDdd(e.target.value)}
-                        required={isSignUp}
-                      >
-                        <option value="">DDD</option>
-                        {DDD_LIST.map(({ ddd, estado }) => (
-                          <option key={ddd} value={ddd}>
-                            {estado} ({ddd})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  ) : (
-                    <div className="col-span-3">
-                      <input
-                        type="text"
-                        className="w-24 p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                        value={ddd}
-                        onChange={(e) => setDdd(e.target.value.replace(/\D/g, '').slice(0, 3))}
-                        placeholder="Área"
-                        required={isSignUp}
-                      />
-                    </div>
-                  )}
-                  <div className="col-span-6">
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                      <input
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
-                        className="pl-10 w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                        required={isSignUp}
-                        placeholder="Número"
-                        maxLength={9}
-                      />
-                    </div>
+                  <div className="col-span-1 relative">
+                    <select
+                      value={ddd}
+                      onChange={(e) => setDdd(e.target.value)}
+                      className="w-full p-4 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-orange-500 text-sm appearance-none"
+                      required
+                    >
+                      <option value="" className="bg-gray-900">DDD</option>
+                      {DDD_LIST.map(item => (
+                        <option key={item.ddd} value={item.ddd} className="bg-gray-900">{item.ddd}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-span-2 relative">
+                    <input
+                      type="tel"
+                      placeholder="WhatsApp"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="w-full p-4 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:ring-2 focus:ring-orange-500 placeholder:text-gray-600"
+                      required
+                    />
                   </div>
                 </div>
-              </div>
+              </>
             )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Senha
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 pr-10 w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                  required
-                  minLength={6}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
-                >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </button>
-              </div>
-              {isSignUp && (
-                <p className="mt-1 text-sm text-gray-400">
-                  Mínimo de 6 caracteres
-                </p>
-              )}
+            <div className="relative group">
+              <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5 group-focus-within:text-orange-500 transition-colors" />
+              <input
+                type="email"
+                placeholder="Seu E-mail"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all placeholder:text-gray-600"
+                required
+              />
             </div>
 
-            {isSignUp && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="cadastrarMoto"
-                    checked={cadastrarMoto}
-                    onChange={(e) => setCadastrarMoto(e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-600 text-yellow-500 focus:ring-yellow-500 bg-gray-700"
-                  />
-                  <label htmlFor="cadastrarMoto" className="text-sm text-gray-300">
-                    Cadastrar uma moto agora
-                  </label>
-                </div>
-
-                {cadastrarMoto && (
-                  <div className="space-y-4 pt-4 border-t border-gray-700">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">
-                        Marca da Moto
-                      </label>
-                      <input
-                        type="text"
-                        value={motoData.marca}
-                        onChange={(e) => setMotoData(prev => ({ ...prev, marca: e.target.value }))}
-                        className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                        required={cadastrarMoto}
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">
-                        Modelo
-                      </label>
-                      <input
-                        type="text"
-                        value={motoData.modelo}
-                        onChange={(e) => setMotoData(prev => ({ ...prev, modelo: e.target.value }))}
-                        className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                        required={cadastrarMoto}
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1">
-                          Ano
-                        </label>
-                        <input
-                          type="number"
-                          value={motoData.ano}
-                          onChange={(e) => setMotoData(prev => ({ ...prev, ano: parseInt(e.target.value) || new Date().getFullYear() }))}
-                          min="1900"
-                          max={new Date().getFullYear() + 1}
-                          className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                          required={cadastrarMoto}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1">
-                          Quilometragem
-                        </label>
-                        <input
-                          type="number"
-                          value={motoData.quilometragem_atual}
-                          onChange={(e) => setMotoData(prev => ({ ...prev, quilometragem_atual: e.target.value }))}
-                          min="0"
-                          className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
-                          required={cadastrarMoto}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+            <div className="relative group">
+              <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5 group-focus-within:text-orange-500 transition-colors" />
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Sua Senha"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full pl-12 pr-12 py-4 bg-white/5 border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all placeholder:text-gray-600"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-white"
+              >
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 text-gray-900 py-2 px-4 rounded-md hover:from-yellow-400 hover:to-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-gray-800 disabled:opacity-50 font-medium transition-all duration-300 transform hover:-translate-y-0.5"
+              className="w-full btn-premium py-4"
             >
-              {loading ? 'Carregando...' : isSignUp ? 'Criar Conta' : 'Entrar'}
+              {loading ? (
+                <div className="w-6 h-6 border-2 border-black/20 border-t-black rounded-full animate-spin"></div>
+              ) : (
+                isSignUp ? 'CRIAR MINHA CONTA' : 'ENVELOPAR AGORA'
+              )}
             </button>
           </form>
 
           <button
-            onClick={() => {
-              setIsSignUp(!isSignUp);
-              setError('');
-              setPassword('');
-              if (!isSignUp) {
-                setName('');
-                setDdi('55');
-                setDdd('');
-                setPhone('');
-                setCadastrarMoto(true);
-                setMotoData({
-                  marca: '',
-                  modelo: '',
-                  ano: new Date().getFullYear(),
-                  quilometragem_atual: ''
-                });
-              }
-            }}
-            className="mt-4 text-sm text-yellow-400 hover:text-yellow-300 block w-full text-center transition-colors"
+            onClick={() => setIsSignUp(!isSignUp)}
+            className="w-full mt-6 text-sm font-bold text-gray-500 hover:text-orange-500 transition-colors uppercase tracking-widest"
           >
-            {isSignUp
-              ? 'Já tem uma conta? Entre aqui'
-              : 'Não tem uma conta? Cadastre-se'}
+            {isSignUp ? 'Já tem uma conta? Entrar' : 'Não tem conta? Cadastrar-se'}
           </button>
         </div>
       </div>

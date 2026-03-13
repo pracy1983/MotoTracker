@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, Phone, Shield, Bell, HelpCircle, Save } from 'lucide-react';
+import { User, Mail, Phone, Shield, Bell, HelpCircle, Save, ChevronRight, MessageSquare } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface Profile {
@@ -79,152 +79,130 @@ export function Settings() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center p-8">
-        <div className="text-gray-600">Carregando...</div>
+      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
+        <div className="w-10 h-10 border-4 border-orange-500/20 border-t-orange-500 rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <h2 className="text-2xl font-bold mb-6">Configurações</h2>
+    <div className="max-w-2xl mx-auto space-y-8 pb-32">
+       <div>
+          <h2 className="text-3xl font-bold text-white font-orbitron tracking-tighter uppercase">
+            Configurações
+          </h2>
+          <p className="text-gray-500 text-sm font-medium uppercase tracking-widest">Ajustes finos da plataforma</p>
+        </div>
 
-      <div className="space-y-6">
-        {/* Perfil */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <User className="h-5 w-5 text-blue-600" />
-              Perfil
-            </h3>
-            {!editMode ? (
-              <button
-                onClick={() => setEditMode(true)}
-                className="text-blue-600 hover:text-blue-800 text-sm"
+      <div className="space-y-4">
+        {/* Perfil Link-like Button (Since we have MeuPerfil, maybe this should redirect or just be a quick edit) */}
+        <div className="glass-card p-6 border-white/5 space-y-6">
+           <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                 <div className="w-10 h-10 bg-orange-500/10 rounded-xl flex items-center justify-center">
+                    <User className="h-5 w-5 text-orange-500" />
+                 </div>
+                 <div>
+                    <h3 className="text-sm font-bold text-white uppercase tracking-widest">Informações Pessoais</h3>
+                    <p className="text-[10px] text-gray-500 font-medium">Nome, Telefone e E-mail</p>
+                 </div>
+              </div>
+              <button 
+                onClick={() => setEditMode(!editMode)}
+                className="text-[10px] font-black text-orange-500 uppercase tracking-widest hover:underline"
               >
-                Editar
+                {editMode ? 'FECHAR' : 'EDITAR'}
               </button>
-            ) : (
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setEditMode(false)}
-                  className="text-gray-600 hover:text-gray-800 text-sm"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="flex items-center gap-1 text-green-600 hover:text-green-800 text-sm"
-                >
-                  <Save className="h-4 w-4" />
-                  {saving ? 'Salvando...' : 'Salvar'}
-                </button>
-              </div>
-            )}
-          </div>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <div className="flex items-center gap-2 text-gray-600">
-                <Mail className="h-4 w-4" />
-                {user?.email}
-              </div>
-            </div>
+           </div>
 
-            {editMode ? (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+           {editMode && (
+             <div className="space-y-4 pt-4 border-t border-white/5 animate-slide-down">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Nome</label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full p-2 border border-gray-300 rounded-md"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:ring-2 focus:ring-orange-500 outline-none transition-all"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Telefone</label>
                   <input
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                    className="w-full p-2 border border-gray-300 rounded-md"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:ring-2 focus:ring-orange-500 outline-none transition-all"
                   />
                 </div>
-              </>
-            ) : (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <User className="h-4 w-4" />
-                    {profile?.name || 'Não cadastrado'}
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Phone className="h-4 w-4" />
-                    {profile?.phone || 'Não cadastrado'}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="btn-premium w-full flex items-center justify-center gap-2"
+                >
+                  {saving ? 'SALVANDO...' : 'SALVAR ALTERAÇÕES'}
+                </button>
+             </div>
+           )}
         </div>
 
         {/* Segurança */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <Shield className="h-5 w-5 text-blue-600" />
-            Segurança
-          </h3>
-          <button 
-            onClick={async () => {
-              const { error } = await supabase.auth.resetPasswordForEmail(user?.email);
-              if (!error) {
-                alert('Email de redefinição de senha enviado!');
-              }
-            }}
-            className="text-blue-600 hover:text-blue-800"
-          >
-            Alterar senha
-          </button>
+        <div className="glass-card p-6 border-white/5">
+           <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                 <div className="w-10 h-10 bg-blue-500/10 rounded-xl flex items-center justify-center">
+                    <Shield className="h-5 w-5 text-blue-500" />
+                 </div>
+                 <div>
+                    <h3 className="text-sm font-bold text-white uppercase tracking-widest">Segurança</h3>
+                    <p className="text-[10px] text-gray-500 font-medium">Senha e autenticação</p>
+                 </div>
+              </div>
+              <button 
+                onClick={async () => {
+                  const { error } = await supabase.auth.resetPasswordForEmail(user?.email);
+                  if (!error) alert('Link de redefinição enviado para seu e-mail!');
+                }}
+                className="text-[10px] font-black text-blue-500 uppercase tracking-widest hover:underline"
+              >
+                REDEFINIR SENHA
+              </button>
+           </div>
         </div>
 
         {/* Notificações */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <Bell className="h-5 w-5 text-blue-600" />
-            Notificações
-          </h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Alertas de Manutenção</p>
-                <p className="text-sm text-gray-600">Receba notificações sobre manutenções programadas</p>
+        <div className="glass-card p-6 border-white/5">
+           <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                 <div className="w-10 h-10 bg-purple-500/10 rounded-xl flex items-center justify-center">
+                    <Bell className="h-5 w-5 text-purple-500" />
+                 </div>
+                 <div>
+                    <h3 className="text-sm font-bold text-white uppercase tracking-widest">Notificações</h3>
+                    <p className="text-[10px] text-gray-500 font-medium">Alertas de manutenção push</p>
+                 </div>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" className="sr-only peer" />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <input type="checkbox" className="sr-only peer" defaultChecked />
+                <div className="w-11 h-6 bg-white/5 rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-orange-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all border border-white/5"></div>
               </label>
-            </div>
-          </div>
+           </div>
         </div>
 
-        {/* Ajuda */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <HelpCircle className="h-5 w-5 text-blue-600" />
-            Ajuda
-          </h3>
-          <div className="space-y-2">
-            <button className="text-blue-600 hover:text-blue-800 block">FAQ</button>
-            <button className="text-blue-600 hover:text-blue-800 block">Suporte</button>
-            <button className="text-blue-600 hover:text-blue-800 block">Termos de Uso</button>
-          </div>
+        {/* Suporte */}
+        <div className="glass-card p-6 border-white/5 group hover:bg-white/10 transition-colors cursor-pointer">
+           <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                 <div className="w-10 h-10 bg-green-500/10 rounded-xl flex items-center justify-center">
+                    <MessageSquare className="h-5 w-5 text-green-500" />
+                 </div>
+                 <div>
+                    <h3 className="text-sm font-bold text-white uppercase tracking-widest">Suporte & FAQ</h3>
+                    <p className="text-[10px] text-gray-500 font-medium">Ajuda e termos de uso</p>
+                 </div>
+              </div>
+              <ChevronRight className="h-5 w-5 text-gray-700 group-hover:text-white transition-colors" />
+           </div>
         </div>
       </div>
     </div>
