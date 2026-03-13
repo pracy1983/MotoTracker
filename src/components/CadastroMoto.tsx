@@ -25,12 +25,24 @@ export function CadastroMoto({ onClose, motoParaEditar, onSuccess }: CadastroMot
     cor: motoParaEditar?.cor || ''
   });
 
-  const [marcaSearch, setMarcaSearch] = useState('');
-  const [modeloSearch, setModeloSearch] = useState('');
   const [marcaSuggestions, setMarcaSuggestions] = useState<string[]>([]);
   const [modeloSuggestions, setModeloSuggestions] = useState<any[]>([]);
   const [showMarcaList, setShowMarcaList] = useState(false);
   const [showModeloList, setShowModeloList] = useState(false);
+  
+  useEffect(() => {
+    setFormData({
+      marca: motoParaEditar?.marca || '',
+      modelo: motoParaEditar?.modelo || '',
+      cilindradas: motoParaEditar?.cilindradas?.toString() || '',
+      ano: motoParaEditar?.ano || new Date().getFullYear(),
+      quilometragem_atual: motoParaEditar?.quilometragem_atual?.toString() || '',
+      placa: motoParaEditar?.placa || '',
+      cor: motoParaEditar?.cor || ''
+    });
+    setErrors({});
+    setError('');
+  }, [motoParaEditar]);
 
   useEffect(() => {
     if (formData.marca && !motoParaEditar) {
@@ -38,7 +50,7 @@ export function CadastroMoto({ onClose, motoParaEditar, onSuccess }: CadastroMot
         m.toLowerCase().includes(formData.marca.toLowerCase())
       );
       setMarcaSuggestions(filtered);
-    } else {
+    } else if (!motoParaEditar) {
       setMarcaSuggestions(Object.keys(MOTORCYCLE_DATABASE));
     }
   }, [formData.marca, motoParaEditar]);
@@ -299,8 +311,11 @@ export function CadastroMoto({ onClose, motoParaEditar, onSuccess }: CadastroMot
                       <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600" />
                       <input
                         type="number"
-                        value={formData.ano}
-                        onChange={(e) => setFormData({...formData, ano: parseInt(e.target.value)})}
+                        value={formData.ano || ''}
+                        onChange={(e) => {
+                          const val = e.target.value === '' ? '' : parseInt(e.target.value);
+                          setFormData({...formData, ano: val as any});
+                        }}
                         className="w-full bg-white/5 border border-white/10 rounded-xl p-4 pl-12 text-white focus:ring-2 focus:ring-orange-500 outline-none transition-all text-center font-orbitron"
                       />
                     </div>
