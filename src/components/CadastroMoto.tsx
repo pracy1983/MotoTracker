@@ -129,20 +129,39 @@ export function CadastroMoto({ onClose, motoParaEditar, onSuccess }: CadastroMot
   const handleDelete = async () => {
     if (!motoParaEditar) return;
     setLoading(true);
+    setError('');
+    
     try {
-      // Deletar manutenções e rotas primeiro seria bom, mas o BD deve ter cascade ou o Supabase lida.
-      // Vamos tentar deletar direto.
+      // 1. Manually delete related data first as a safety measure
+      // (Even though we have a migration for CASCADE, this ensures it works during transitions)
+      await supabase
+        .from('rotas')
+        .delete()
+        .eq('motocicleta_id', motoParaEditar.id);
+        
+      await supabase
+        .from('manutencoes')
+        .delete()
+        .eq('motocicleta_id', motoParaEditar.id);
+
+      // 2. Finally delete the motorcycle
       const { error: delError } = await supabase
         .from('motocicletas')
         .delete()
         .eq('id', motoParaEditar.id);
       
-      if (delError) throw delError;
+      if (delError) {
+        console.error('Database delete error:', delError);
+        throw delError;
+      }
       
       if (onSuccess) onSuccess();
       if (onClose) onClose();
     } catch (err: any) {
-      setError(err.message);
+      console.error('Delete catch block:', err);
+      // Safely extract error message
+      const msg = err?.message || err?.details || (typeof err === 'string' ? err : 'Erro desconhecido ao deletar');
+      setError(msg);
       setLoading(false);
       setShowDeleteConfirm(false);
     }
