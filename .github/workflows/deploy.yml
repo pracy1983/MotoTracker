@@ -1,0 +1,37 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - feature/improve-registration
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Execute Remote SSH commands
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER || 'root' }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # Tenta localizar o diretório do projeto no servidor
+            PROJECT_DIR=$(find /etc/easypanel /root /home -name "fix_revans.sh" 2>/dev/null | head -1 | xargs dirname)
+            if [ -z "$PROJECT_DIR" ]; then
+              echo "Erro: Não foi possível localizar o diretório do projeto com o script fix_revans.sh"
+              exit 1
+            fi
+            
+            echo "Entrando no diretório: $PROJECT_DIR"
+            cd "$PROJECT_DIR"
+            
+            echo "Puxando atualizações do GitHub..."
+            git pull origin feature/improve-registration
+            
+            echo "Executando script de correção de CORS e infraestrutura..."
+            bash fix_revans.sh
