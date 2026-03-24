@@ -92,19 +92,25 @@ for svc_name in list(services.keys()):
             "GOTRUE_SMS_AUTOCONFIRM": "false",
             "GOTRUE_SECURITY_CAPTCHA_ENABLED": "false",
             "GOTRUE_LOG_LEVEL": "info",
+            # CORS and URL Fixes
+            "GOTRUE_SITE_URL": "https://mototracker-moto-frontend.vrdrcy.easypanel.host",
+            "GOTRUE_EXTERNAL_ALLOWED_REDIRECT_URIS": "https://mototracker-moto-frontend.vrdrcy.easypanel.host",
         }
 
         if isinstance(env, dict):
             for k, v in bool_vars.items():
-                if k not in env or not env[k] or env[k] == "":
+                # Sempre sobrescreve as URLs de CORS para garantir o fix
+                if k in ["GOTRUE_SITE_URL", "GOTRUE_EXTERNAL_ALLOWED_REDIRECT_URIS"] or k not in env or not env[k] or env[k] == "":
                     print(f"  [CORRIGINDO] {k}={v} em {svc_name}")
                     env[k] = v
                     changed = True
         elif isinstance(env, list):
             keys = {x.split('=')[0] for x in env if '=' in x}
             for k, v in bool_vars.items():
-                if k not in keys:
-                    print(f"  [ADICIONANDO] {k}={v} em {svc_name}")
+                if k in ["GOTRUE_SITE_URL", "GOTRUE_EXTERNAL_ALLOWED_REDIRECT_URIS"] or k not in keys:
+                    print(f"  [ADICIONANDO/ATUALIZANDO] {k}={v} em {svc_name}")
+                    # Remove se já existir para atualizar
+                    env = [x for x in env if not x.startswith(f"{k}=")]
                     env.append(f"{k}={v}")
                     changed = True
 
